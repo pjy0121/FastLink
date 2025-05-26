@@ -27,14 +27,27 @@
   - 현재 탐색기/브라우저의 경로를 자동 인식하여 빠르게 링크 추가
   - 웹 페이지 추가 시 'Microsoft Edge' 브라우저 사용 추천
   - 최신 'Google Chrome' 브라우저는 보안이 강화되어 일부 웹 페이지는 경로 인식이 제대로 안 되거나 페이지 전환 중에만 제대로 인식됨
+    <p align="center">
+      <img src="https://github.com/user-attachments/assets/03afcf4a-0f96-455e-9402-ab9504c4169d" alt="On Web Browser" width="500"/>
+      <img src="https://github.com/user-attachments/assets/41223682-5980-454b-9c4b-6d94ba4d437d" alt="On File System" width="400"/>
+    </p>
+
 - **퀵뷰(QuickView) 단축키**:
   - (기본) Ctrl + Shift + Space
   - 전체 목록을 빠르게 팝업으로 띄워 바로 실행
   - 더블클릭 : 실행, 우클릭 : 경로 복사
+    <p align="left">
+      <img src="https://github.com/user-attachments/assets/5d128265-4600-4ab5-9c83-84192312c0a1" alt="On Web Browser" width="400"/>
+    </p>
+
 - **각 링크별 단축키**:
   - 원하는 단축키 지정, 언제든 실행 가능
+
 - **시스템 트레이 아이콘**:
   - 항상 백그라운드에서 실행, 빠른 추가, 자동 시작 설정, 종료 등
+    <p align="left">
+      <img src="https://github.com/user-attachments/assets/addc1017-9f08-4d97-8083-3e04a5d4a1df" alt="On Web Browser" width="400"/>
+    </p>
 
 ---
 

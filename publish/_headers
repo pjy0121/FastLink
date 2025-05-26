@@ -1,0 +1,8 @@
+/publish/*.application
+  Content-Type: application/x-ms-application
+
+/publish/*.manifest
+  Content-Type: application/x-ms-manifest
+
+/publish/*.deploy
+  Content-Type: application/octet-stream

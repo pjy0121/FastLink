@@ -66,8 +66,8 @@
 
 ### 1. 설치파일로 사용
 
-- [Releases](https://github.com/pjy0121/FastLink/releases) 탭에서 최신 설치파일(.exe 또는 .msi) 다운로드 후 실행
-- 요구사항 : .NET8 이상, Windows 10 이상
+- [publish 페이지](https://fastxlink.netlify.app/publish)에서 최신 버전 다운로드 후 실행
+- 요구사항 : .NET 8 이상, Windows 10 이상
 
 ### 2. 직접 빌드
 

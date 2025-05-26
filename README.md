@@ -59,8 +59,8 @@ especially when you use multiple browsers, cloud drives, or work across differen
 
 ### 1. Using the Installer
 
-- Download the latest version from [publish page](https://fastxlink.netlify.app/publish) and run it.
-- Prerequisites : .NET8 or higher, Windows 10 or higher
+- Download the latest setup.exe from [publish page](https://fastxlink.netlify.app/publish) and run it.
+- Prerequisites : .NET 8 or higher, Windows 10 or higher
 
 ### 2. Build from Source
 

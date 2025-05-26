@@ -1,2 +1,6 @@
+*.manifest binary
+*.application binary
+*.html binary
+*.exe binary
+*.deploy binary
 *.json binary
-*.config binary

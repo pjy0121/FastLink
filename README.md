@@ -24,14 +24,26 @@ especially when you use multiple browsers, cloud drives, or work across differen
   - Instantly add the current Explorer or browser path as a new link.
   - When adding a web page, we recommend using the 'Microsoft Edge' browser.
   - The latest 'Google Chrome' browser has enhanced security, so some web pages do not recognize the path properly or are recognized properly only during page transitions.
+    <p align="center">
+      <img src="https://github.com/user-attachments/assets/03afcf4a-0f96-455e-9402-ab9504c4169d" alt="On Web Browser" width="500"/>
+      <img src="https://github.com/user-attachments/assets/41223682-5980-454b-9c4b-6d94ba4d437d" alt="On File System" width="400"/>
+    </p>
+
 - **QuickView Hotkey:**  
   - (Default) Ctrl + Shift + Space
   - Show the full link list for quick selection.
+    <p align="left">
+      <img src="https://github.com/user-attachments/assets/5d128265-4600-4ab5-9c83-84192312c0a1" alt="On Web Browser" width="400"/>
+    </p>
+
 - **Per-link Hotkeys:**  
   - Assign your own hotkey to any link for instant launch.
+
 - **System Tray Icon:**  
   - Running in the background. Quick add, auto-start toggle, and exit functions.
-
+    <p align="left">
+      <img src="https://github.com/user-attachments/assets/addc1017-9f08-4d97-8083-3e04a5d4a1df" alt="On Web Browser" width="400"/>
+    </p>
 ---
 
 ## ⚙️ Other Features

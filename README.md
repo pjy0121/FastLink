@@ -40,11 +40,10 @@
 
 ### 2. 직접 빌드
 
-(1) git clone https://github.com/pjy0121/fastlink.git
-(2) cd fastlink
-
-(3) Visual Studio 2022 이상에서 FastLink.sln 열기
-(4) NuGet 패키지 복원 (MahApps.Metro, GongSolutions.Wpf.DragDrop, NHotkey.Wpf 등)
+(1) git clone https://github.com/pjy0121/fastlink.git<br>
+(2) cd fastlink<br>
+(3) Visual Studio 2022 이상에서 FastLink.sln 열기<br>
+(4) NuGet 패키지 복원 (MahApps.Metro, GongSolutions.Wpf.DragDrop, NHotkey.Wpf 등)<br>
 (5) 빌드 후 bin 폴더 내 fastlink.exe 실행
 
 ---

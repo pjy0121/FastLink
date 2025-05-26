@@ -5,8 +5,6 @@ VisualStudioVersion = 17.11.35222.181
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FastLink", "FastLink\FastLink.csproj", "{CCED257F-DAB4-46B0-9430-9CCF805DF896}"
 EndProject
-Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "FastLinkSetup", "FastLinkSetup\FastLinkSetup.vdproj", "{DFFCE2C3-58F0-4106-AEFB-A700AABA3D4C}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -17,8 +15,6 @@ Global
 		{CCED257F-DAB4-46B0-9430-9CCF805DF896}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CCED257F-DAB4-46B0-9430-9CCF805DF896}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CCED257F-DAB4-46B0-9430-9CCF805DF896}.Release|Any CPU.Build.0 = Release|Any CPU
-		{DFFCE2C3-58F0-4106-AEFB-A700AABA3D4C}.Debug|Any CPU.ActiveCfg = Debug
-		{DFFCE2C3-58F0-4106-AEFB-A700AABA3D4C}.Release|Any CPU.ActiveCfg = Release
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

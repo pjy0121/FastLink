@@ -9,6 +9,8 @@ using FastLink.Models;
 using FastLink.Services;
 using FastLink.Utils;
 using FormsScreen = System.Windows.Forms.Screen;
+using System.Windows.Controls.Primitives;
+using System.Windows.Media;
 
 namespace FastLink
 {
@@ -160,6 +162,7 @@ namespace FastLink
         private void LoadFastLinkFile(string filePath)
         {
             _isFileLoading = true;
+
             var loaded = new FileService().LoadRows(filePath);
             RowItems.Clear();
             foreach (var item in loaded)
@@ -167,6 +170,7 @@ namespace FastLink
 
             CollectionViewSource.GetDefaultView(RowItems).Refresh();
             appSettings.SaveFilePath = filePath;
+
             _isFileLoading = false;
         }
 
@@ -355,20 +359,50 @@ namespace FastLink
             else IsEditing = true;
         }
 
-        private void LauncherGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        private void LauncherDataGrid_LoadingRow(object sender, DataGridRowEventArgs e)
         {
-            if (LauncherGrid.SelectedItem is RowItem row && !IsEditing)
+            if (e.Row.Item is RowItem item)
+            {
+                var view = CollectionViewSource.GetDefaultView(LauncherDataGrid.ItemsSource) as CollectionView;
+                int index = view?.IndexOf(item) ?? -1;
+                item.RowNumber = index + 1;
+            }
+        }
+
+        private void LauncherDataGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            if (LauncherDataGrid.SelectedItem is RowItem row && !IsEditing)
             {
                 CommonUtils.OpenRowPath(row);
                 e.Handled = true;
             }
         }
 
-        private void LauncherGridRow_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
+        private void LauncherDataGrid_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
         {
-            if (!IsEditing && sender is DataGridRow row && row.Item is RowItem data)
+            var depObj = e.OriginalSource as DependencyObject;
+            while (depObj != null && depObj is not DataGridRow && depObj is not DataGridColumnHeader)
+                depObj = VisualTreeHelper.GetParent(depObj);
+
+            // Row 우클릭 시 path copy
+            if (depObj is DataGridRow row && row.Item is RowItem data)
             {
                 CommonUtils.CopyRowPath(data);
+                e.Handled = true;
+                return;
+            }
+
+            // Header 우클릭 시 정렬 해제 및 순서 복원
+            if (depObj is DataGridColumnHeader)
+            {
+                var view = CollectionViewSource.GetDefaultView(LauncherDataGrid.ItemsSource);
+                if (view != null && view.CanSort)
+                    view.SortDescriptions.Clear();
+
+                // 모든 컬럼의 정렬 표식 제거
+                foreach (var column in LauncherDataGrid.Columns)
+                    column.SortDirection = null;
+
                 e.Handled = true;
             }
         }

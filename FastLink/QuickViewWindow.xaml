@@ -2,7 +2,6 @@
                  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                  xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
-                 xmlns:utils="clr-namespace:FastLink.Utils"
                  Title="Quick View"
                  Width="500"
                  Height="440"
@@ -12,76 +11,48 @@
                  Topmost="True"
                  GlowBrush="{DynamicResource MahApps.Brushes.Accent}">
     <mah:MetroWindow.Resources>
-        <utils:RowNumberConverter x:Key="RowNumberConverter"/>
-        <Style x:Key="CenterCellStyle" TargetType="TextBlock">
-            <Setter Property="HorizontalAlignment" Value="Center"/>
-            <Setter Property="VerticalAlignment" Value="Center"/>
-            <Setter Property="TextAlignment" Value="Center"/>
-        </Style>
-        <Style x:Key="CenterHeaderStyle" TargetType="GridViewColumnHeader">
+        <Style x:Key="CenterHeaderStyle" TargetType="DataGridColumnHeader">
             <Setter Property="HorizontalContentAlignment" Value="Center"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
-            <Setter Property="TextElement.FontWeight" Value="Bold"/>
+            <Setter Property="FontWeight" Value="Bold"/>
         </Style>
     </mah:MetroWindow.Resources>
     <Border Background="White" CornerRadius="16" Padding="12">
-        <ListView x:Name="LinkListView"
-                  ItemsSource="{Binding}"
-                  AlternationCount="10000"
-                  MouseDoubleClick="LinkListView_MouseDoubleClick"
+        <DataGrid x:Name="LinkDataGrid"
+                  AutoGenerateColumns="False"
+                  CanUserAddRows="False"
+                  CanUserDeleteRows="False"
+                  HeadersVisibility="Column"
+                  IsReadOnly="True"
+                  SelectionMode="Single"
+                  RowHeaderWidth="0"
+                  GridLinesVisibility="All"
                   BorderThickness="0"
-                  ScrollViewer.VerticalScrollBarVisibility="Auto">
-            <ListView.ItemContainerStyle>
-                <Style TargetType="ListViewItem">
-                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-                    <EventSetter Event="PreviewMouseRightButtonDown" Handler="LinkListViewItem_PreviewMouseRightButtonDown"/>
-                </Style>
-            </ListView.ItemContainerStyle>
-            <ListView.View>
-                <GridView>
-                    <GridViewColumn Header="#" Width="40"
-                                    HeaderContainerStyle="{StaticResource CenterHeaderStyle}">
-                        <GridViewColumn.CellTemplate>
-                            <DataTemplate>
-                                <TextBlock Style="{StaticResource CenterCellStyle}"
-                                           Text="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=ListViewItem}, Path=(ItemsControl.AlternationIndex), Converter={StaticResource RowNumberConverter}}"/>
-                            </DataTemplate>
-                        </GridViewColumn.CellTemplate>
-                    </GridViewColumn>
-                    <GridViewColumn Header="Hotkey" Width="60"
-                                    HeaderContainerStyle="{StaticResource CenterHeaderStyle}">
-                        <GridViewColumn.CellTemplate>
-                            <DataTemplate>
-                                <TextBlock Style="{StaticResource CenterCellStyle}" Text="{Binding HotkeyKey}"/>
-                            </DataTemplate>
-                        </GridViewColumn.CellTemplate>
-                    </GridViewColumn>
-                    <GridViewColumn Header="Name" Width="120"
-                                    HeaderContainerStyle="{StaticResource CenterHeaderStyle}">
-                        <GridViewColumn.CellTemplate>
-                            <DataTemplate>
-                                <TextBlock Style="{StaticResource TextBlockStyle}" Text="{Binding Name}"/>
-                            </DataTemplate>
-                        </GridViewColumn.CellTemplate>
-                    </GridViewColumn>
-                    <GridViewColumn Header="Type" Width="60"
-                                    HeaderContainerStyle="{StaticResource CenterHeaderStyle}">
-                        <GridViewColumn.CellTemplate>
-                            <DataTemplate>
-                                <TextBlock Style="{StaticResource CenterCellStyle}" Text="{Binding Type}"/>
-                            </DataTemplate>
-                        </GridViewColumn.CellTemplate>
-                    </GridViewColumn>
-                    <GridViewColumn Header="Path" Width="180"
-                                    HeaderContainerStyle="{StaticResource CenterHeaderStyle}">
-                        <GridViewColumn.CellTemplate>
-                            <DataTemplate>
-                                <TextBlock Style="{StaticResource TextBlockStyle}" Text="{Binding Path}"/>
-                            </DataTemplate>
-                        </GridViewColumn.CellTemplate>
-                    </GridViewColumn>
-                </GridView>
-            </ListView.View>
-        </ListView>
+                  ScrollViewer.VerticalScrollBarVisibility="Auto"
+                  MouseDoubleClick="LinkDataGrid_MouseDoubleClick"
+                  PreviewMouseRightButtonDown="LinkDataGrid_PreviewMouseRightButtonDown"
+                  PreviewKeyDown="LinkDataGrid_PreviewKeyDown"
+                  LoadingRow="LinkDataGrid_LoadingRow"
+                  HorizontalGridLinesBrush="#DDDDDD"
+                  VerticalGridLinesBrush="#DDDDDD">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="#" Width="40"
+                                    HeaderStyle="{StaticResource CenterHeaderStyle}"
+                                    ElementStyle="{StaticResource TextBlockStyle}"
+                                    Binding="{Binding RowNumber}" IsReadOnly="True"/>
+                <DataGridTextColumn Header="Hotkey" Width="60"
+                                    HeaderStyle="{StaticResource CenterHeaderStyle}"
+                                    ElementStyle="{StaticResource TextBlockStyle}"
+                                    Binding="{Binding HotkeyKey}"/>
+                <DataGridTextColumn Header="Name" Width="*"
+                                    HeaderStyle="{StaticResource CenterHeaderStyle}"
+                                    ElementStyle="{StaticResource TextBlockStyle}"
+                                    Binding="{Binding Name}"/>
+                <DataGridTextColumn Header="Type" Width="60"
+                                    HeaderStyle="{StaticResource CenterHeaderStyle}"
+                                    ElementStyle="{StaticResource TextBlockStyle}"
+                                    Binding="{Binding Type}"/>
+            </DataGrid.Columns>
+        </DataGrid>
     </Border>
 </mah:MetroWindow>

@@ -6,11 +6,24 @@ namespace FastLink.Models
 
     public class RowItem : INotifyPropertyChanged
     {
+        private int _rowNumber;
         private string _name = "";
         private string _path = "";
         private RowType _type = RowType.File;
         private string _hotkeyKey = "";
 
+        public int RowNumber
+        {
+            get => _rowNumber;
+            set
+            {
+                if (_rowNumber != value)
+                {
+                    _rowNumber = value;
+                    OnPropertyChanged(nameof(RowNumber));
+                }
+            }
+        }
         public string Name
         {
             get => _name;

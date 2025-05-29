@@ -14,15 +14,10 @@
     <mah:MetroWindow.Resources>
         <utils:EditSaveIconConverter x:Key="EditSaveIconConverter"/>
         <utils:InverseBoolConverter x:Key="InverseBoolConverter"/>
-        <utils:RowNumberConverter x:Key="RowNumberConverter"/>
         <Style x:Key="CenterHeaderStyle" TargetType="DataGridColumnHeader">
             <Setter Property="HorizontalContentAlignment" Value="Center"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
             <Setter Property="TextElement.FontWeight" Value="Bold"/>
-        </Style>
-        <Style x:Key="CenterCellStyle" TargetType="DataGridCell">
-            <Setter Property="HorizontalContentAlignment" Value="Center"/>
-            <Setter Property="VerticalContentAlignment" Value="Center"/>
         </Style>
     </mah:MetroWindow.Resources>
     <Grid Background="#F5F6FA">
@@ -79,42 +74,36 @@
 
                 <!-- Main Table with Border -->
                 <Border Grid.Row="1" Margin="32,12,32,0" Padding="0" BorderBrush="#EEE" BorderThickness="1" CornerRadius="8">
-                    <DataGrid x:Name="LauncherGrid"
+                    <DataGrid x:Name="LauncherDataGrid"
                               AutoGenerateColumns="False"
                               ItemsSource="{Binding RowItems}"
                               Background="White"
                               BorderThickness="0"
                               RowHeight="28"
                               HeadersVisibility="Column"
+                              GridLinesVisibility="All"
                               CanUserAddRows="False"
                               CanUserDeleteRows="False"
                               IsReadOnly="{Binding IsEditing, Converter={StaticResource InverseBoolConverter}, RelativeSource={RelativeSource AncestorType=mah:MetroWindow}}"
                               SelectionMode="Single"
                               Style="{DynamicResource MahApps.Styles.DataGrid}"
-                              CellStyle="{StaticResource CenterCellStyle}"
                               ColumnHeaderStyle="{StaticResource CenterHeaderStyle}"
                               dd:DragDrop.IsDragSource="True"
                               dd:DragDrop.IsDropTarget="True"
                               dd:DragDrop.DropHandler="{Binding}"
-                              MouseDoubleClick="LauncherGrid_MouseDoubleClick"
+                              LoadingRow="LauncherDataGrid_LoadingRow"
+                              MouseDoubleClick="LauncherDataGrid_MouseDoubleClick"
+                              PreviewMouseRightButtonDown="LauncherDataGrid_PreviewMouseRightButtonDown"
                               AlternationCount="10000">
-                        <DataGrid.RowStyle>
-                            <Style TargetType="DataGridRow">
-                                <EventSetter Event="PreviewMouseRightButtonDown" Handler="LauncherGridRow_PreviewMouseRightButtonDown"/>
-                            </Style>
-                        </DataGrid.RowStyle>
                         <DataGrid.Columns>
                             <!-- Numbering -->
-                            <DataGridTemplateColumn Header="#" Width="40" IsReadOnly="True" HeaderStyle="{StaticResource CenterHeaderStyle}">
-                                <DataGridTemplateColumn.CellTemplate>
-                                    <DataTemplate>
-                                        <TextBlock Text="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type DataGridRow}}, Path=AlternationIndex, Converter={StaticResource RowNumberConverter}}" 
-                                                   HorizontalAlignment="Center"/>
-                                    </DataTemplate>
-                                </DataGridTemplateColumn.CellTemplate>
-                            </DataGridTemplateColumn>
+                            <DataGridTextColumn Header="#" Width="40"
+                                                HeaderStyle="{StaticResource CenterHeaderStyle}"
+                                                ElementStyle="{StaticResource TextBlockStyle}"
+                                                Binding="{Binding RowNumber}" IsReadOnly="True"/>
                             <!-- Hotkey -->
-                            <DataGridTemplateColumn Header="Hotkey" Width="80" HeaderStyle="{StaticResource CenterHeaderStyle}">
+                            <DataGridTemplateColumn Header="Hotkey" Width="80"
+                                                    HeaderStyle="{StaticResource CenterHeaderStyle}">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <TextBlock Text="{Binding HotkeyKey}" VerticalAlignment="Center" HorizontalAlignment="Center"/>
@@ -130,29 +119,22 @@
                                 </DataGridTemplateColumn.CellEditingTemplate>
                             </DataGridTemplateColumn>
                             <!-- Name -->
-                            <DataGridTextColumn Header="Name" Binding="{Binding Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                            <DataGridTextColumn Header="Name" Binding="{Binding Name, Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"
                                                 MinWidth="200" Width="5*"
                                                 HeaderStyle="{StaticResource CenterHeaderStyle}"
-                            >
-                                <DataGridTextColumn.ElementStyle>
-                                    <StaticResource ResourceKey="TextBlockStyle"/>
-                                </DataGridTextColumn.ElementStyle>
-                            </DataGridTextColumn>
+                                                ElementStyle="{StaticResource TextBlockStyle}"/>
                             <!-- Type -->
                             <DataGridTextColumn Header="Type"
                                                 Binding="{Binding Type}"
                                                 Width="80"
-                                                HeaderStyle="{StaticResource CenterHeaderStyle}"/>
+                                                HeaderStyle="{StaticResource CenterHeaderStyle}"
+                                                ElementStyle="{StaticResource TextBlockStyle}"/>
                             <!-- Path -->
                             <DataGridTextColumn Header="Path"
                                                 Binding="{Binding Path, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                 MinWidth="80" Width="2*"
                                                 HeaderStyle="{StaticResource CenterHeaderStyle}"
-                            >
-                                <DataGridTextColumn.ElementStyle>
-                                    <StaticResource ResourceKey="TextBlockStyle"/>
-                                </DataGridTextColumn.ElementStyle>
-                            </DataGridTextColumn>
+                                                ElementStyle="{StaticResource TextBlockStyle}"/>
                             <!-- Copy/Delete -->
                             <DataGridTemplateColumn Header="" Width="55">
                                 <DataGridTemplateColumn.CellTemplate>

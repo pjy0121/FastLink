@@ -81,6 +81,7 @@ namespace FastLink
         public MainWindow()
         {
             InitializeComponent();
+            PreviewKeyDown += CommonEvents.Window_PreviewKeyDown;
 
             appSettings = SettingsService.Load();
             DataContext = this;
@@ -185,10 +186,7 @@ namespace FastLink
                 e.Cancel = true;
                 Hide();
             }
-            else
-            {
-                _trayService.Dispose();
-            }
+            else _trayService.Dispose();
         }
 
         private void RegisterAddHotkey()

@@ -10,6 +10,8 @@ namespace FastLink
         public QuickViewWindow(ObservableCollection<RowItem> items)
         {
             InitializeComponent();
+            PreviewKeyDown += CommonEvents.Window_PreviewKeyDown;
+
             LinkListView.ItemsSource = items;
         }
 

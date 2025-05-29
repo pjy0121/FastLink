@@ -1,6 +1,7 @@
 ﻿using System.Windows;
 using System.Windows.Input;
 using FastLink.Models;
+using FastLink.Utils;
 
 namespace FastLink
 {
@@ -14,6 +15,8 @@ namespace FastLink
         public AddRowWindow()
         {
             InitializeComponent();
+            PreviewKeyDown += CommonEvents.Window_PreviewKeyDown;
+
             TypeCombo.SelectedIndex = 0;
         }
 

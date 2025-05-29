@@ -203,8 +203,7 @@
                                              HorizontalContentAlignment="Center"
                                              MaxLength="4"
                                              Text="Space"
-                                             ToolTip="Focus here and press a key"
-                                             PreviewKeyDown="QuickViewHotkeyBox_PreviewKeyDown"/>
+                                             ToolTip="Focus here and press a key"/>
                                     <Button Content="Apply" Click="QuickViewHotkeyApplyButton_Click" Style="{StaticResource ButtonStyle}" mah:ControlsHelper.ContentCharacterCasing="Normal" Margin="8,0,0,0"/>
                                 </StackPanel>
                             </StackPanel>

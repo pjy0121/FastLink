@@ -56,19 +56,16 @@ namespace FastLink
             }
         }
 
-        // AddRowWindow hotkey
+        // Hotkeys
         private Key _addHotkey;
-        private ModifierKeys _addHotkeyModifiers;
-
-        // QuickView hotkey
         private Key _quickViewHotkey;
-        private ModifierKeys _quickViewHotkeyModifiers;
 
         public MainWindow()
         {
             InitializeComponent();
             PreviewKeyDown += CommonEvents.Window_PreviewKeyDown;
             AddHotkeyKeyBox.PreviewKeyDown += CommonEvents.KeyBox_PreviewKeyDown;
+            QuickViewHotkeyBox.PreviewKeyDown += CommonEvents.KeyBox_PreviewKeyDown;
 
             appSettings = SettingsService.Load();
             DataContext = this;
@@ -102,11 +99,8 @@ namespace FastLink
 
             RowItems.CollectionChanged += (s, e) =>
             {
-                Logger.Debug("vacva");
                 if (!_isFileLoading)
                 {
-                    Logger.Debug("GFFF");
-
                     RegisterRowHotkeys();
                     SaveRows();
                     CollectionViewSource.GetDefaultView(RowItems).Refresh();
@@ -123,24 +117,25 @@ namespace FastLink
             AddCtrlCheck.IsChecked = appSettings.BaseModifier.Contains("Control");
             AddShiftCheck.IsChecked = appSettings.BaseModifier.Contains("Shift");
             AddAltCheck.IsChecked = appSettings.BaseModifier.Contains("Alt");
+            _hotKeyService.BaseModifier = ParseModifiers(appSettings.BaseModifier);
+
             AddHotkeyKeyBox.Text = appSettings.AddHotkey;
             QuickViewHotkeyBox.Text = appSettings.QuickViewHotkey;
             AutoStartCheck.IsChecked = appSettings.AutoStart;
 
-            _addHotkey = Enum.TryParse<Key>(appSettings.AddHotkey, out var k1) ? k1 : Key.F1;
-            _addHotkeyModifiers = ParseModifiers(appSettings.BaseModifier);
-
-            _quickViewHotkey = Enum.TryParse<Key>(appSettings.QuickViewHotkey, out var k2) ? k2 : Key.Space;
-            _quickViewHotkeyModifiers = _addHotkeyModifiers;
+            _addHotkey = Enum.TryParse<Key>(appSettings.AddHotkey, out var k1) ? k1 : Key.None;
+            _quickViewHotkey = Enum.TryParse<Key>(appSettings.QuickViewHotkey, out var k2) ? k2 : Key.None;
         }
 
         private void SaveSettingsFromUI()
         {
-            appSettings.BaseModifier =
+            var modifier =
                 (AddCtrlCheck.IsChecked == true ? "Control," : "") +
                 (AddShiftCheck.IsChecked == true ? "Shift," : "") +
                 (AddAltCheck.IsChecked == true ? "Alt," : "");
-            appSettings.BaseModifier = appSettings.BaseModifier.TrimEnd(',');
+            appSettings.BaseModifier = modifier.TrimEnd(',');
+            _hotKeyService.BaseModifier = ParseModifiers(appSettings.BaseModifier);
+
             appSettings.AddHotkey = AddHotkeyKeyBox.Text.Trim();
             appSettings.QuickViewHotkey = QuickViewHotkeyBox.Text.Trim();
             appSettings.AutoStart = AutoStartCheck.IsChecked == true;
@@ -184,7 +179,7 @@ namespace FastLink
         private void RegisterAddHotkey()
         {
             _hotKeyService.RegisterHotkey(
-                "AddRowHotkey", _addHotkey, _addHotkeyModifiers,
+                "AddRowHotkey", _addHotkey,
                 AddRowHotkeyHandler
             );
         }
@@ -192,7 +187,7 @@ namespace FastLink
         private void RegisterQuickViewHotkey()
         {
             _hotKeyService.RegisterHotkey(
-                "QuickViewHotkey", _quickViewHotkey, _quickViewHotkeyModifiers,
+                "QuickViewHotkey", _quickViewHotkey,
                 QuickViewHotkeyHandler
             );
         }
@@ -252,54 +247,6 @@ namespace FastLink
                 CommonUtils.OpenRowPath(row);
                 e.Handled = true;
             }
-        }
-
-        private void AddHotkeyKeyBox_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
-        {
-            if (e.Key == Key.LeftCtrl || e.Key == Key.RightCtrl ||
-                e.Key == Key.LeftShift || e.Key == Key.RightShift ||
-                e.Key == Key.LeftAlt || e.Key == Key.RightAlt)
-            {
-                e.Handled = true;
-                return;
-            }
-            if (e.Key >= Key.F1 && e.Key <= Key.F24)
-                AddHotkeyKeyBox.Text = e.Key.ToString();
-            else if (e.Key >= Key.A && e.Key <= Key.Z)
-                AddHotkeyKeyBox.Text = e.Key.ToString();
-            else if (e.Key >= Key.D0 && e.Key <= Key.D9)
-                AddHotkeyKeyBox.Text = e.Key.ToString().Substring(1);
-            else if (e.Key >= Key.NumPad0 && e.Key <= Key.NumPad9)
-                AddHotkeyKeyBox.Text = "Num" + (e.Key - Key.NumPad0);
-            else
-                AddHotkeyKeyBox.Text = e.Key.ToString();
-
-            AddHotkeyKeyBox.CaretIndex = AddHotkeyKeyBox.Text.Length;
-            e.Handled = true;
-        }
-
-        private void QuickViewHotkeyBox_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
-        {
-            if (e.Key == Key.LeftCtrl || e.Key == Key.RightCtrl ||
-                e.Key == Key.LeftShift || e.Key == Key.RightShift ||
-                e.Key == Key.LeftAlt || e.Key == Key.RightAlt)
-            {
-                e.Handled = true;
-                return;
-            }
-            if (e.Key >= Key.F1 && e.Key <= Key.F24)
-                QuickViewHotkeyBox.Text = e.Key.ToString();
-            else if (e.Key >= Key.A && e.Key <= Key.Z)
-                QuickViewHotkeyBox.Text = e.Key.ToString();
-            else if (e.Key >= Key.D0 && e.Key <= Key.D9)
-                QuickViewHotkeyBox.Text = e.Key.ToString().Substring(1);
-            else if (e.Key >= Key.NumPad0 && e.Key <= Key.NumPad9)
-                QuickViewHotkeyBox.Text = "Num" + (e.Key - Key.NumPad0);
-            else
-                QuickViewHotkeyBox.Text = e.Key.ToString();
-
-            QuickViewHotkeyBox.CaretIndex = QuickViewHotkeyBox.Text.Length;
-            e.Handled = true;
         }
 
         private void CopyPathButton_Click(object sender, RoutedEventArgs e)
@@ -452,7 +399,6 @@ namespace FastLink
         {
             SaveSettingsFromUI();
             _addHotkey = Enum.TryParse<Key>(AddHotkeyKeyBox.Text.Trim(), out var k) ? k : Key.F1;
-            _addHotkeyModifiers = ParseModifiers(appSettings.BaseModifier);
             RegisterAddHotkey();
             System.Windows.MessageBox.Show("Add hotkey has been changed.");
         }
@@ -461,7 +407,6 @@ namespace FastLink
         {
             SaveSettingsFromUI();
             _quickViewHotkey = Enum.TryParse<Key>(QuickViewHotkeyBox.Text.Trim(), out var k) ? k : Key.Space;
-            _quickViewHotkeyModifiers = ParseModifiers(appSettings.BaseModifier);
             RegisterQuickViewHotkey();
             System.Windows.MessageBox.Show("QuickView hotkey has been changed.");
         }

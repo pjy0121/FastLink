@@ -23,7 +23,7 @@ namespace FastLink.Utils
             { }
         }
 
-        public static void Error(Exception ex)
+        public static void Error(Exception ex, string message = null)
         {
             string currentDirectory = Environment.CurrentDirectory;
             string logDirectory = Path.Combine(currentDirectory, "Logs");
@@ -35,7 +35,7 @@ namespace FastLink.Utils
                     Directory.CreateDirectory(logDirectory);
 
                 string logEntry = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}\t{ex.GetType().FullName}\t{ex.Message}\n{ex.StackTrace}";
-
+                if (message != null) logEntry += $"\n=> {message}";
                 using StreamWriter sw = new(logFile, true);
                 sw.WriteLine(logEntry);
             }

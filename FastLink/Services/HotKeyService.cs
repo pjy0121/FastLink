@@ -2,6 +2,7 @@
 using NHotkey;
 using NHotkey.Wpf;
 using FastLink.Models;
+using FastLink.Utils;
 
 namespace FastLink.Services
 {
@@ -14,23 +15,36 @@ namespace FastLink.Services
         public EventHandler<HotkeyEventArgs> Handler { get; set; }
     }
 
-    public class HotkeyService
+    public class HotkeyService(ModifierKeys baseModifier = ModifierKeys.Control | ModifierKeys.Shift)
     {
         private readonly Dictionary<string, HotkeyInfo> _hotkeys = new();
         private readonly string _rowPrefix = "RowHotkey_";
+        private ModifierKeys _baseModifier = baseModifier;
 
-        public void RegisterHotkey(string name, Key key, ModifierKeys modifiers, EventHandler<HotkeyEventArgs> handler, object? tag = null)
+        public ModifierKeys BaseModifier { get => _baseModifier; set => _baseModifier = value; }
+
+        public void RegisterHotkey(string name, Key key, EventHandler<HotkeyEventArgs> handler, object? tag = null)
         {
-            try { HotkeyManager.Current.Remove(name); } catch { }
+            if (key == Key.None) return;
+
+            try
+            {
+                HotkeyManager.Current.Remove(name);
+                HotkeyManager.Current.AddOrReplace(name, key, BaseModifier, handler);
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, $"Name : {name}, Input keys : {BaseModifier} + {key}");
+            }
+
             var info = new HotkeyInfo
             {
                 Name = name,
                 Key = key,
-                Modifiers = modifiers,
+                Modifiers = BaseModifier,
                 Handler = handler,
                 Tag = tag
             };
-            HotkeyManager.Current.AddOrReplace(name, key, modifiers, handler);
             _hotkeys[name] = info;
         }
 
@@ -56,7 +70,7 @@ namespace FastLink.Services
                     if (Enum.TryParse<Key>(keyStr, out var key))
                     {
                         string hotkeyName = _rowPrefix + keyStr;
-                        RegisterHotkey(hotkeyName, key, ModifierKeys.Control | ModifierKeys.Shift, handler, row);
+                        RegisterHotkey(hotkeyName, key, handler, row);
                     }
                 }
             }

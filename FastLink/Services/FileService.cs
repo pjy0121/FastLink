@@ -13,22 +13,22 @@ namespace FastLink.Services
             WriteIndented = true
         };
 
-        public ObservableCollection<RowItem> LoadRows(string filePath)
+        public static ObservableCollection<RowItem> LoadRows(string filePath)
         {
-            if (!File.Exists(filePath)) return new();
+            if (!File.Exists(filePath)) return [];
             try
             {
                 var items = JsonSerializer.Deserialize<ObservableCollection<RowItem>>(File.ReadAllText(filePath));
-                return items ?? new();
+                return items ?? [];
             }
             catch (Exception ex)
             {
                 Logger.Error(ex);
             }
-            return new();
+            return [];
         }
 
-        public void SaveRows(string filePath, ObservableCollection<RowItem> rows)
+        public static void SaveRows(string filePath, ObservableCollection<RowItem> rows)
         {
             try
             {

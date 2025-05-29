@@ -16,6 +16,7 @@ namespace FastLink
         {
             InitializeComponent();
             PreviewKeyDown += CommonEvents.Window_PreviewKeyDown;
+            HotkeyKeyBox.PreviewKeyDown += CommonEvents.KeyBox_PreviewKeyDown;
 
             TypeCombo.SelectedIndex = 0;
         }
@@ -37,30 +38,6 @@ namespace FastLink
                 return;
             }
             DialogResult = true;
-        }
-
-        private void HotkeyKeyBox_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
-        {
-            if (e.Key == Key.LeftCtrl || e.Key == Key.RightCtrl ||
-                e.Key == Key.LeftShift || e.Key == Key.RightShift ||
-                e.Key == Key.LeftAlt || e.Key == Key.RightAlt)
-            {
-                e.Handled = true;
-                return;
-            }
-            if (e.Key >= Key.F1 && e.Key <= Key.F24)
-                HotkeyKeyBox.Text = e.Key.ToString();
-            else if (e.Key >= Key.A && e.Key <= Key.Z)
-                HotkeyKeyBox.Text = e.Key.ToString();
-            else if (e.Key >= Key.D0 && e.Key <= Key.D9)
-                HotkeyKeyBox.Text = e.Key.ToString().Substring(1);
-            else if (e.Key >= Key.NumPad0 && e.Key <= Key.NumPad9)
-                HotkeyKeyBox.Text = "Num" + (e.Key - Key.NumPad0);
-            else
-                HotkeyKeyBox.Text = e.Key.ToString();
-
-            HotkeyKeyBox.CaretIndex = HotkeyKeyBox.Text.Length;
-            e.Handled = true;
         }
 
         private void Cancel_Click(object sender, RoutedEventArgs e)

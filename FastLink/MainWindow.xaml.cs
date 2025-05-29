@@ -84,6 +84,7 @@ namespace FastLink
         {
             InitializeComponent();
             PreviewKeyDown += CommonEvents.Window_PreviewKeyDown;
+            AddHotkeyKeyBox.PreviewKeyDown += CommonEvents.KeyBox_PreviewKeyDown;
 
             appSettings = SettingsService.Load();
             DataContext = this;
@@ -163,7 +164,7 @@ namespace FastLink
         {
             _isFileLoading = true;
 
-            var loaded = new FileService().LoadRows(filePath);
+            var loaded = FileService.LoadRows(filePath);
             RowItems.Clear();
             foreach (var item in loaded)
                 RowItems.Add(item);
@@ -347,16 +348,30 @@ namespace FastLink
                 CommonUtils.CopyRowPath(row);
         }
 
-        private void EditModeButton_Click(object sender, RoutedEventArgs e)
+        private void EditButton_Click(object sender, RoutedEventArgs e)
         {
-            if (IsEditing)
+            if (sender is System.Windows.Controls.Button btn && btn.DataContext is RowItem rowItem)
             {
-                IsEditing = false;
-                SaveRows();
-                RegisterRowHotkeys();
-                System.Windows.MessageBox.Show("Your changes have been saved.");
+                var editWindow = new AddRowWindow
+                {
+                    Owner = this
+                };
+
+                editWindow.NameBox.Text = rowItem.Name;
+                editWindow.PathBox.Text = rowItem.Path;
+                editWindow.TypeCombo.SelectedIndex = (rowItem.Type == RowType.File) ? 0 : 1;
+                editWindow.HotkeyKeyBox.Text = rowItem.HotkeyKey;
+
+                if (editWindow.ShowDialog() == true)
+                {
+                    rowItem.Name = editWindow.ItemName;
+                    rowItem.Path = editWindow.ItemPath;
+                    rowItem.Type = editWindow.ItemType;
+                    rowItem.HotkeyKey = editWindow.ItemHotkeyKey;
+
+                    CollectionViewSource.GetDefaultView(LauncherDataGrid.ItemsSource).Refresh();
+                }
             }
-            else IsEditing = true;
         }
 
         private void LauncherDataGrid_LoadingRow(object sender, DataGridRowEventArgs e)
@@ -448,7 +463,7 @@ namespace FastLink
         {
             try
             {
-                new FileService().SaveRows(appSettings.SaveFilePath, RowItems);
+                FileService.SaveRows(appSettings.SaveFilePath, RowItems);
             }
             catch (Exception ex)
             {

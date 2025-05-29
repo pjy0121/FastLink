@@ -45,8 +45,13 @@
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Grid.Column="0">
-                        <TextBlock Text="Search:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <StackPanel Orientation="Horizontal" Height="32" Margin="0,0,0,8" VerticalAlignment="Center">
+                        <iconPacks:PackIconMaterial Kind="Magnify"
+                                                    Width="16" Height="16"
+                                                    VerticalAlignment="Center"
+                                                    HorizontalAlignment="Center"
+                                                    Foreground="#888"
+                                                    Margin="10,0,6,0"/>
                         <TextBox x:Name="SearchBox" Width="200" VerticalAlignment="Center" TextChanged="SearchBox_TextChanged"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Grid.Column="1">
@@ -67,7 +72,7 @@
 
                 <!-- Main Table with Border -->
                 <Border Grid.Row="1" Margin="32,12,32,0" Padding="0" BorderBrush="#EEE" BorderThickness="1" CornerRadius="8">
-                    <DataGrid x:Name="LauncherDataGrid"
+                    <DataGrid x:Name="DataGrid"
                               AutoGenerateColumns="False"
                               ItemsSource="{Binding RowItems}"
                               Background="White"
@@ -77,16 +82,16 @@
                               GridLinesVisibility="All"
                               CanUserAddRows="False"
                               CanUserDeleteRows="False"
-                              IsReadOnly="{Binding IsEditing, Converter={StaticResource InverseBoolConverter}, RelativeSource={RelativeSource AncestorType=mah:MetroWindow}}"
+                              IsReadOnly="True"
                               SelectionMode="Single"
                               Style="{DynamicResource MahApps.Styles.DataGrid}"
                               ColumnHeaderStyle="{StaticResource CenterHeaderStyle}"
                               dd:DragDrop.IsDragSource="True"
                               dd:DragDrop.IsDropTarget="True"
                               dd:DragDrop.DropHandler="{Binding}"
-                              LoadingRow="LauncherDataGrid_LoadingRow"
-                              MouseDoubleClick="LauncherDataGrid_MouseDoubleClick"
-                              PreviewMouseRightButtonDown="LauncherDataGrid_PreviewMouseRightButtonDown"
+                              LoadingRow="DataGrid_LoadingRow"
+                              MouseDoubleClick="DataGrid_MouseDoubleClick"
+                              PreviewMouseRightButtonDown="DataGrid_PreviewMouseRightButtonDown"
                               AlternationCount="10000">
                         <DataGrid.Columns>
                             <!-- Numbering -->
@@ -95,22 +100,10 @@
                                                 ElementStyle="{StaticResource TextBlockStyle}"
                                                 Binding="{Binding RowNumber}" IsReadOnly="True"/>
                             <!-- Hotkey -->
-                            <DataGridTemplateColumn Header="Hotkey" Width="80"
-                                                    HeaderStyle="{StaticResource CenterHeaderStyle}">
-                                <DataGridTemplateColumn.CellTemplate>
-                                    <DataTemplate>
-                                        <TextBlock Text="{Binding HotkeyKey}" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                                    </DataTemplate>
-                                </DataGridTemplateColumn.CellTemplate>
-                                <DataGridTemplateColumn.CellEditingTemplate>
-                                    <DataTemplate>
-                                        <TextBox Text="{Binding HotkeyKey, UpdateSourceTrigger=PropertyChanged}" 
-                                                 VerticalAlignment="Center" MaxLength="4"
-                                                 HorizontalContentAlignment="Center"
-                                                 PreviewKeyDown="RowHotkeyBox_PreviewKeyDown"/>
-                                    </DataTemplate>
-                                </DataGridTemplateColumn.CellEditingTemplate>
-                            </DataGridTemplateColumn>
+                            <DataGridTextColumn Header="Hotkey" Width="80"
+                                                    HeaderStyle="{StaticResource CenterHeaderStyle}"
+                                                    ElementStyle="{StaticResource TextBlockStyle}"
+                                                    Binding="{Binding HotkeyKey}"/>
                             <!-- Name -->
                             <DataGridTextColumn Header="Name" Binding="{Binding Name, Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"
                                                 MinWidth="200" Width="5*"

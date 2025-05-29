@@ -5,12 +5,12 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Data;
+using System.Windows.Media;
+using System.Windows.Controls.Primitives;
 using FastLink.Models;
 using FastLink.Services;
 using FastLink.Utils;
 using FormsScreen = System.Windows.Forms.Screen;
-using System.Windows.Controls.Primitives;
-using System.Windows.Media;
 
 namespace FastLink
 {
@@ -18,7 +18,7 @@ namespace FastLink
     {
         private const int BrowerParsingTimeout = 3000;
 
-        public ObservableCollection<RowItem> RowItems { get; set; } = new();
+        public ObservableCollection<RowItem> RowItems { get; set; } = [];
         private TrayService _trayService;
         private HotkeyService _hotKeyService = new();
         private bool _isExitByTray = false;
@@ -40,22 +40,6 @@ namespace FastLink
                 }
             }
         }
-
-        private bool _isEditing = false;
-        public bool IsEditing
-        {
-            get => _isEditing;
-            set
-            {
-                if (_isEditing != value)
-                {
-                    _isEditing = value;
-                    OnPropertyChanged(nameof(IsEditing));
-                    OnPropertyChanged(nameof(EditButtonText));
-                }
-            }
-        }
-        public string EditButtonText => IsEditing ? "Save" : "Edit";
 
         private string _searchKeyword = "";
         public string SearchKeyword
@@ -118,8 +102,11 @@ namespace FastLink
 
             RowItems.CollectionChanged += (s, e) =>
             {
+                Logger.Debug("vacva");
                 if (!_isFileLoading)
                 {
+                    Logger.Debug("GFFF");
+
                     RegisterRowHotkeys();
                     SaveRows();
                     CollectionViewSource.GetDefaultView(RowItems).Refresh();
@@ -267,33 +254,6 @@ namespace FastLink
             }
         }
 
-        private void RowHotkeyBox_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
-        {
-            if (sender is System.Windows.Controls.TextBox tb)
-            {
-                if (e.Key == Key.LeftCtrl || e.Key == Key.RightCtrl ||
-                    e.Key == Key.LeftShift || e.Key == Key.RightShift ||
-                    e.Key == Key.LeftAlt || e.Key == Key.RightAlt)
-                {
-                    e.Handled = true;
-                    return;
-                }
-                if (e.Key >= Key.F1 && e.Key <= Key.F24)
-                    tb.Text = e.Key.ToString();
-                else if (e.Key >= Key.A && e.Key <= Key.Z)
-                    tb.Text = e.Key.ToString();
-                else if (e.Key >= Key.D0 && e.Key <= Key.D9)
-                    tb.Text = e.Key.ToString().Substring(1);
-                else if (e.Key >= Key.NumPad0 && e.Key <= Key.NumPad9)
-                    tb.Text = "Num" + (e.Key - Key.NumPad0);
-                else
-                    tb.Text = e.Key.ToString();
-
-                tb.CaretIndex = tb.Text.Length;
-                e.Handled = true;
-            }
-        }
-
         private void AddHotkeyKeyBox_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
         {
             if (e.Key == Key.LeftCtrl || e.Key == Key.RightCtrl ||
@@ -369,31 +329,31 @@ namespace FastLink
                     rowItem.Type = editWindow.ItemType;
                     rowItem.HotkeyKey = editWindow.ItemHotkeyKey;
 
-                    CollectionViewSource.GetDefaultView(LauncherDataGrid.ItemsSource).Refresh();
+                    CollectionViewSource.GetDefaultView(DataGrid.ItemsSource).Refresh();
                 }
             }
         }
 
-        private void LauncherDataGrid_LoadingRow(object sender, DataGridRowEventArgs e)
+        private void DataGrid_LoadingRow(object sender, DataGridRowEventArgs e)
         {
             if (e.Row.Item is RowItem item)
             {
-                var view = CollectionViewSource.GetDefaultView(LauncherDataGrid.ItemsSource) as CollectionView;
+                var view = CollectionViewSource.GetDefaultView(DataGrid.ItemsSource) as CollectionView;
                 int index = view?.IndexOf(item) ?? -1;
                 item.RowNumber = index + 1;
             }
         }
 
-        private void LauncherDataGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        private void DataGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
-            if (LauncherDataGrid.SelectedItem is RowItem row && !IsEditing)
+            if (DataGrid.SelectedItem is RowItem row)
             {
                 CommonUtils.OpenRowPath(row);
                 e.Handled = true;
             }
         }
 
-        private void LauncherDataGrid_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
+        private void DataGrid_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
         {
             var depObj = e.OriginalSource as DependencyObject;
             while (depObj != null && depObj is not DataGridRow && depObj is not DataGridColumnHeader)
@@ -410,12 +370,12 @@ namespace FastLink
             // Header 우클릭 시 정렬 해제 및 순서 복원
             if (depObj is DataGridColumnHeader)
             {
-                var view = CollectionViewSource.GetDefaultView(LauncherDataGrid.ItemsSource);
+                var view = CollectionViewSource.GetDefaultView(DataGrid.ItemsSource);
                 if (view != null && view.CanSort)
                     view.SortDescriptions.Clear();
 
                 // 모든 컬럼의 정렬 표식 제거
-                foreach (var column in LauncherDataGrid.Columns)
+                foreach (var column in DataGrid.Columns)
                     column.SortDirection = null;
 
                 e.Handled = true;

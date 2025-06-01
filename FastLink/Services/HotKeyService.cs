@@ -27,7 +27,6 @@ namespace FastLink.Services
             string keyName = GetKeyName(key);
             if (_hotkeys.TryGetValue(keyName, out var info))
             {
-                Logger.Debug("After : " + key.ToString() + " - Tag : " + tag);
                 info.Handlers.Add(new HandlerWithTag
                 {
                     Handler = handler,
@@ -39,8 +38,6 @@ namespace FastLink.Services
             // 처음 등록되는 hotkey라면 NHotkey에 등록
             try
             {
-                Logger.Debug("First : " + key.ToString() + " - Tag : " + tag);
-
                 HotkeyManager.Current.Remove(keyName);
                 HotkeyManager.Current.AddOrReplace(keyName, key, BaseModifier, (s, e) =>
                 {

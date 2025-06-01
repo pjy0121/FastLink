@@ -488,7 +488,6 @@ namespace FastLink
         public event PropertyChangedEventHandler PropertyChanged;
         protected void OnPropertyChanged(string name) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
 
-        // GongSolutions.Wpf.DragDrop IDropTarget
         public void DragOver(GongSolutions.Wpf.DragDrop.IDropInfo dropInfo)
         {
             if (dropInfo.Data is RowItem && dropInfo.TargetCollection is ObservableCollection<RowItem>)

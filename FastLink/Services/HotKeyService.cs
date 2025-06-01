@@ -1,93 +1,120 @@
-﻿using System.Windows.Input;
-using NHotkey;
+﻿using NHotkey;
 using NHotkey.Wpf;
+using System.Windows.Input;
 using FastLink.Models;
 using FastLink.Utils;
 
 namespace FastLink.Services
 {
-    public class HotkeyInfo
-    {
-        public string Name { get; set; }
-        public Key Key { get; set; }
-        public ModifierKeys Modifiers { get; set; }
-        public object? Tag { get; set; } // RowItem 등 추가 데이터
-        public EventHandler<HotkeyEventArgs> Handler { get; set; }
-    }
-
     public class HotkeyService(ModifierKeys baseModifier = ModifierKeys.Control | ModifierKeys.Shift)
     {
         private readonly Dictionary<string, HotkeyInfo> _hotkeys = new();
-        private readonly string _rowPrefix = "RowHotkey_";
+        private const string Prefix = "FastLink_";
         private ModifierKeys _baseModifier = baseModifier;
 
         public ModifierKeys BaseModifier { get => _baseModifier; set => _baseModifier = value; }
 
-        public void RegisterHotkey(string name, Key key, EventHandler<HotkeyEventArgs> handler, object? tag = null)
+        private static string GetKeyName(Key key)
+        {
+            return $"{Prefix}{key}";
+        }
+
+        public void RegisterHotkey(Key key, HotkeyType type, EventHandler<HotkeyEventArgs> handler, object? tag = null)
         {
             if (key == Key.None) return;
 
+            // 이미 등록된 hotkey가 있으면 handler만 추가
+            string keyName = GetKeyName(key);
+            if (_hotkeys.TryGetValue(keyName, out var info))
+            {
+                Logger.Debug("After : " + key.ToString() + " - Tag : " + tag);
+                info.Handlers.Add(new HandlerWithTag
+                {
+                    Handler = handler,
+                    Tag = tag
+                });
+                return;
+            }
+
+            // 처음 등록되는 hotkey라면 NHotkey에 등록
             try
             {
-                HotkeyManager.Current.Remove(name);
-                HotkeyManager.Current.AddOrReplace(name, key, BaseModifier, handler);
+                Logger.Debug("First : " + key.ToString() + " - Tag : " + tag);
+
+                HotkeyManager.Current.Remove(keyName);
+                HotkeyManager.Current.AddOrReplace(keyName, key, BaseModifier, (s, e) =>
+                {
+                    if (_hotkeys.TryGetValue(keyName, out var info))
+                        info.Invoke(s, e);
+                });
             }
             catch (Exception ex)
             {
-                Logger.Error(ex, $"Name : {name}, Input keys : {BaseModifier} + {key}");
+                Logger.Error(ex, $"Failed to register key {keyName}. Input keys : {BaseModifier} + {key}");
             }
 
-            var info = new HotkeyInfo
+            var newInfo = new HotkeyInfo
             {
-                Name = name,
                 Key = key,
-                Modifiers = BaseModifier,
-                Handler = handler,
-                Tag = tag
-            };
-            _hotkeys[name] = info;
-        }
-
-        public void UnregisterHotkey(string name)
-        {
-            try { HotkeyManager.Current.Remove(name); } catch { }
-            _hotkeys.Remove(name);
-        }
-
-        public void RegisterRowHotkeys(IEnumerable<RowItem> rows, EventHandler<HotkeyEventArgs> handler)
-        {
-            foreach (var key in new List<string>(_hotkeys.Keys))
-            {
-                if (key.StartsWith(_rowPrefix))
-                    UnregisterHotkey(key);
-            }
-
-            foreach (var row in rows)
-            {
-                if (!string.IsNullOrWhiteSpace(row.HotkeyKey))
+                Handlers =
                 {
-                    string keyStr = row.HotkeyKey.ToUpper();
-                    if (Enum.TryParse<Key>(keyStr, out var key))
+                    new HandlerWithTag
                     {
-                        string hotkeyName = _rowPrefix + keyStr;
-                        RegisterHotkey(hotkeyName, key, handler, row);
+                        Handler = handler,
+                        Tag = tag
                     }
                 }
+            };
+            _hotkeys[keyName] = newInfo;
+        }
+
+        public void RefreshAllHotkeys(IEnumerable<RowItem> rowItems, IEnumerable<HotkeyInfo> specialHotkeys)
+        {
+            // Reset Hotkeys
+            foreach (var name in _hotkeys.Keys.ToList())
+            {
+                try
+                {
+                    HotkeyManager.Current.Remove(name);
+                }
+                catch { }
+            }
+            _hotkeys.Clear();
+
+            // RowHotkey 재등록
+            foreach (var row in rowItems)
+                RegisterRowHotkey(row);
+
+            // SpecialHotkey 재등록
+            foreach (var info in specialHotkeys)
+                RegisterHotkey(info.Key, HotkeyType.Special, info.Handlers.First().Handler);
+        }
+
+        public void RegisterRowHotkey(RowItem row)
+        {
+            if (!string.IsNullOrWhiteSpace(row.HotkeyKey))
+            {
+                string keyStr = row.HotkeyKey.ToUpper();
+                if (Enum.TryParse<Key>(keyStr, out var key))
+                    RegisterHotkey(key, HotkeyType.Row, (s, e) => CommonUtils.OpenRowPath(row), row);
             }
         }
 
-        public HotkeyInfo? GetHotkeyInfo(string name)
+        public void RemoveRowHotkey(RowItem row)
         {
-            _hotkeys.TryGetValue(name, out var info);
-            return info;
-        }
+            if (row == null || string.IsNullOrWhiteSpace(row.HotkeyKey))
+                return;
 
-        public RowItem? GetRowByKey(string key)
-        {
-            string name = _rowPrefix + key.ToUpper();
-            if (_hotkeys.TryGetValue(name, out var info) && info.Tag is RowItem row)
-                return row;
-            return null;
+            string keyName = GetKeyName(Enum.Parse<Key>(row.HotkeyKey.ToUpper()));
+            if (_hotkeys.TryGetValue(keyName, out var info))
+            {
+                info.Handlers.RemoveAll(h => Equals(h.Tag, row));
+                if (info.Handlers.Count == 0)
+                {
+                    HotkeyManager.Current.Remove(keyName);
+                    _hotkeys.Remove(keyName);
+                }
+            }
         }
     }
 }

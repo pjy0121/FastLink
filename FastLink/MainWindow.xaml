@@ -131,6 +131,7 @@
                                                     Click="CopyPathButton_Click"
                                                     Tag="{Binding}"
                                                     Width="25" Height="21"
+                                                    Margin="1,0,0,0"
                                                     Background="Transparent"
                                                     Foreground="Black">
                                                 <iconPacks:PackIconMaterial Kind="ContentCopy" Width="11" Height="11"/>
@@ -140,6 +141,7 @@
                                                     Click="EditButton_Click"
                                                     Tag="{Binding}"
                                                     Width="25" Height="21"
+                                                    Margin="1,0,0,0"
                                                     Background="Transparent"
                                                     Foreground="Black">
                                                 <iconPacks:PackIconMaterial Kind="Pencil" Width="11" Height="11"/>
@@ -148,6 +150,7 @@
                                                     Click="DeleteButton_Click"
                                                     Tag="{Binding}"
                                                     Width="25" Height="21"
+                                                    Margin="1,0,0,0"
                                                     Background="Transparent"
                                                     Foreground="Black">
                                                 <iconPacks:PackIconMaterial Kind="Delete" Width="11" Height="11"/>
@@ -177,6 +180,7 @@
                                     <CheckBox x:Name="AddCtrlCheck" Content="Ctrl" IsChecked="True" VerticalAlignment="Center" Margin="0,0,8,0"/>
                                     <CheckBox x:Name="AddShiftCheck" Content="Shift" IsChecked="True" VerticalAlignment="Center" Margin="0,0,8,0"/>
                                     <CheckBox x:Name="AddAltCheck" Content="Alt" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                    <Button Content="Apply" Click="ApplyModifiers_Click" Style="{StaticResource ButtonStyle}" mah:ControlsHelper.ContentCharacterCasing="Normal" Margin="8,0,0,0"/>
                                 </StackPanel>
                             </StackPanel>
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
@@ -188,7 +192,7 @@
                                              VerticalAlignment="Center"
                                              HorizontalContentAlignment="Center"
                                              MaxLength="4"
-                                             Text="F1"
+                                             Text="A"
                                              ToolTip="Focus here and press a key"/>
                                     <Button Content="Apply" Click="ApplyAddHotkey_Click" Style="{StaticResource ButtonStyle}" mah:ControlsHelper.ContentCharacterCasing="Normal" Margin="8,0,0,0"/>
                                 </StackPanel>
@@ -202,7 +206,7 @@
                                              VerticalAlignment="Center"
                                              HorizontalContentAlignment="Center"
                                              MaxLength="4"
-                                             Text="Space"
+                                             Text="Q"
                                              ToolTip="Focus here and press a key"/>
                                     <Button Content="Apply" Click="QuickViewHotkeyApplyButton_Click" Style="{StaticResource ButtonStyle}" mah:ControlsHelper.ContentCharacterCasing="Normal" Margin="8,0,0,0"/>
                                 </StackPanel>

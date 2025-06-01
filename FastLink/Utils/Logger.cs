@@ -23,7 +23,7 @@ namespace FastLink.Utils
             { }
         }
 
-        public static void Error(Exception ex, string message = null)
+        public static void Error(Exception ex, string? message = null)
         {
             string currentDirectory = Environment.CurrentDirectory;
             string logDirectory = Path.Combine(currentDirectory, "Logs");

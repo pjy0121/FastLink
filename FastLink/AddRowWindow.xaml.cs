@@ -1,5 +1,4 @@
 ﻿using System.Windows;
-using System.Windows.Input;
 using FastLink.Models;
 using FastLink.Utils;
 
@@ -9,7 +8,7 @@ namespace FastLink
     {
         public string ItemName => NameBox.Text.Trim();
         public string ItemPath => PathBox.Text.Trim();
-        public RowType ItemType => TypeCombo.SelectedIndex == 1 ? RowType.Web : RowType.File;
+        public RowType ItemType => TypeCombo.SelectedIndex == 0 ? RowType.File : RowType.Web;
         public string ItemHotkeyKey => HotkeyKeyBox.Text.Trim().ToUpper();
 
         public AddRowWindow()
@@ -27,7 +26,7 @@ namespace FastLink
             PathBox.CaretIndex = PathBox.Text.Length;   // Text의 뒷 부분이 보이도록 설정
             PathBox.Focus();
 
-            TypeCombo.SelectedIndex = (type == RowType.Web) ? 1 : 0;
+            TypeCombo.SelectedIndex = (type == RowType.File) ? 0 : 1;
         }
 
         private void Ok_Click(object sender, RoutedEventArgs e)

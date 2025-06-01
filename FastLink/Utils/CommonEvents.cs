@@ -1,6 +1,4 @@
-﻿using System.IO;
-using System.Windows.Input;
-using FastLink.Models;
+﻿using System.Windows.Input;
 
 namespace FastLink.Utils
 {

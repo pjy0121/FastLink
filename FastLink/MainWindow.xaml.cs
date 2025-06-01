@@ -1,4 +1,5 @@
 ﻿using NHotkey;
+using MahApps.Metro.Controls;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
@@ -12,8 +13,6 @@ using System.Collections.Specialized;
 using FastLink.Models;
 using FastLink.Services;
 using FastLink.Utils;
-using MahApps.Metro.Controls;
-using FormsScreen = System.Windows.Forms.Screen;
 
 namespace FastLink
 {
@@ -21,12 +20,14 @@ namespace FastLink
     {
         private const int BrowerParsingTimeout = 3000;
         public ObservableCollection<RowItem> RowItems { get; set; } = [];
+        private QuickViewWindow? _quickViewWindow;
         private TrayService _trayService;
         private readonly HotkeyService _hotkeyService = new();
-        private bool _isExitByTray = false;
+
         private readonly AppSettings appSettings;
-        private bool _isFileLoading = false;
         private readonly List<HotkeyInfo> _specialHotkeys;
+        private bool _isExitByTray = false;
+        private bool _isFileLoading = false;
 
         public bool IsAutoStart
         {
@@ -40,21 +41,6 @@ namespace FastLink
                     AutoStartService.Set(value);
                     _trayService?.SetAutoStartChecked(value);
                     SettingsService.Save(appSettings);
-                }
-            }
-        }
-
-        private string _searchKeyword = "";
-        public string SearchKeyword
-        {
-            get => _searchKeyword;
-            set
-            {
-                if (_searchKeyword != value)
-                {
-                    _searchKeyword = value;
-                    OnPropertyChanged(nameof(SearchKeyword));
-                    CollectionViewSource.GetDefaultView(RowItems).Refresh();
                 }
             }
         }
@@ -107,7 +93,7 @@ namespace FastLink
             // Tray icon
             _trayService = new TrayService(IsAutoStart)
             {
-                OnAddRow = () => System.Windows.Application.Current.Dispatcher.Invoke(() => ShowAddRowWindowOnForegroundMonitor("", "", RowType.File)),
+                OnAddRow = () => System.Windows.Application.Current.Dispatcher.Invoke(() => ShowAddRowWindow("", "", RowType.File)),
                 OnAutoStartChanged = (val) => System.Windows.Application.Current.Dispatcher.Invoke(() => IsAutoStart = val),
                 OnExit = () =>
                 {
@@ -117,8 +103,7 @@ namespace FastLink
                 }
             };
 
-            // Load settings to UI
-            SetUIFromSettings();
+            LoadUIFromSettings();
             RowItems.CollectionChanged += RowItems_CollectionChanged;
 
             if (IsAutoStart)    // 자동 시작 시 트레이만 보이도록 설정
@@ -156,9 +141,8 @@ namespace FastLink
             _hotkeyService.RemoveRowHotkey(row);
         }
 
-        private void SetUIFromSettings()
+        private void LoadUIFromSettings()
         {
-            // Modifier
             AddCtrlCheck.IsChecked = appSettings.BaseModifier.Contains("Control");
             AddShiftCheck.IsChecked = appSettings.BaseModifier.Contains("Shift");
             AddAltCheck.IsChecked = appSettings.BaseModifier.Contains("Alt");
@@ -207,7 +191,13 @@ namespace FastLink
 
         private void RefreshAllHotkeys()
         {
-            _hotkeyService.RefreshAllHotkeys(RowItems, _specialHotkeys);
+            _hotkeyService.ResetHotkeys();
+
+            foreach (var row in RowItems)
+                _hotkeyService.RegisterRowHotkey(row);
+
+            foreach (var info in _specialHotkeys)
+                _hotkeyService.RegisterHotkey(info.Key, info.Handlers.First().Handler);
         }
 
         private async void OnAddRowHotkeyPressed(object? sender, HotkeyEventArgs e)
@@ -238,17 +228,26 @@ namespace FastLink
             }
 
             System.Windows.Application.Current.Dispatcher.Invoke(
-                () => ShowAddRowWindowOnForegroundMonitor(path ?? "", name ?? "", type));
+                () => ShowAddRowWindow(name, path, type));
             e.Handled = true;
         }
 
         private void OnQuickViewHotkeyPressed(object? sender, HotkeyEventArgs e)
         {
-            var quickView = new QuickViewWindow(RowItems);
+            // 이미 객체가 있다면 제거
+            if (_quickViewWindow != null)
+            {
+                _quickViewWindow.Close();
+                _quickViewWindow = null;
+            }
+
+            _quickViewWindow = new QuickViewWindow(RowItems);
+            _quickViewWindow.Closed += (s, args) => _quickViewWindow = null;
+
             var desktop = SystemParameters.WorkArea;
-            quickView.Left = desktop.Right - quickView.Width - 16;
-            quickView.Top = desktop.Bottom - quickView.Height - 16;
-            quickView.Show();
+            _quickViewWindow.Left = desktop.Right - _quickViewWindow.Width - 16;
+            _quickViewWindow.Top = desktop.Bottom - _quickViewWindow.Height - 16;
+            _quickViewWindow.Show();
 
             e.Handled = true;
         }
@@ -261,24 +260,24 @@ namespace FastLink
 
         private void EditButton_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is System.Windows.Controls.Button btn && btn.DataContext is RowItem rowItem)
+            if (sender is System.Windows.Controls.Button button && button.DataContext is RowItem row)
             {
-                var editWindow = new AddRowWindow
+                var editRowWindow = new AddRowWindow("Edit Link")
                 {
-                    Owner = this
+                    Owner = this,
+                    WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                    Topmost = true,
+                    ShowInTaskbar = false,
+                    ShowActivated = true
                 };
+                editRowWindow.SetFields(row.Name, row.Path, row.HotkeyKey, row.Type);
 
-                editWindow.NameBox.Text = rowItem.Name;
-                editWindow.PathBox.Text = rowItem.Path;
-                editWindow.TypeCombo.SelectedIndex = (rowItem.Type == RowType.File) ? 0 : 1;
-                editWindow.HotkeyKeyBox.Text = rowItem.HotkeyKey;
-
-                if (editWindow.ShowDialog() == true)
+                if (editRowWindow.ShowDialog() == true)
                 {
-                    rowItem.Name = editWindow.ItemName;
-                    rowItem.Path = editWindow.ItemPath;
-                    rowItem.Type = editWindow.ItemType;
-                    rowItem.HotkeyKey = editWindow.ItemHotkeyKey;
+                    row.Name = editRowWindow.InputName;
+                    row.Path = editRowWindow.InputPath;
+                    row.Type = editRowWindow.InputType;
+                    row.HotkeyKey = editRowWindow.InputHotkey;
 
                     RefreshAllHotkeys();    // Hotkey가 바뀔 수 있으므로 초기화
                     SaveRows();
@@ -337,12 +336,12 @@ namespace FastLink
 
         private void AddButton_Click(object sender, RoutedEventArgs e)
         {
-            ShowAddRowWindowOnForegroundMonitor("", "", RowType.File);
+            ShowAddRowWindow("", "", RowType.File);
         }
 
         private void DeleteButton_Click(object sender, RoutedEventArgs e)
         {
-            if ((sender as System.Windows.Controls.Button)?.Tag is RowItem row)
+            if (sender is System.Windows.Controls.Button { Tag: RowItem row })
             {
                 var result = System.Windows.MessageBox.Show("Are you sure you want to delete?",
                     "Confirm Delete", MessageBoxButton.YesNo, MessageBoxImage.Question);
@@ -353,16 +352,16 @@ namespace FastLink
 
         private void LoadButton_Click(object sender, RoutedEventArgs e)
         {
-            var dlg = new Microsoft.Win32.OpenFileDialog
+            var dialog = new Microsoft.Win32.OpenFileDialog
             {
                 Filter = "FastLink file (*.json)|*.json|All files (*.*)|*.*",
                 Title = "Select file to load"
             };
-            if (dlg.ShowDialog() == true)
+            if (dialog.ShowDialog() == true)
             {
                 try
                 {
-                    LoadFastLinkFile(dlg.FileName);
+                    LoadFastLinkFile(dialog.FileName);
                     SaveRows();
                 }
                 catch (Exception ex)
@@ -405,11 +404,9 @@ namespace FastLink
         private void ApplyModifiers_Click(object sender, RoutedEventArgs e)
         {
             var modifier =
-                (AddCtrlCheck.IsChecked == true ? "Control," : "") +
+                ((AddCtrlCheck.IsChecked == true ? "Control," : "") +
                 (AddShiftCheck.IsChecked == true ? "Shift," : "") +
-                (AddAltCheck.IsChecked == true ? "Alt," : "");
-            modifier = modifier.TrimEnd(',');
-
+                (AddAltCheck.IsChecked == true ? "Alt," : "")).TrimEnd(',');
             appSettings.BaseModifier = modifier;
             _hotkeyService.BaseModifier = ParseModifiers(modifier);
 
@@ -448,38 +445,25 @@ namespace FastLink
             IsAutoStart = false;
         }
 
-        private void ShowAddRowWindowOnForegroundMonitor(string path, string name, RowType type)
+        private void ShowAddRowWindow(string? name, string? path, RowType type)
         {
-            var (centerX, centerY) = ExplorerBrowserService.GetForegroundWindowCenter();
-            var screen = FormsScreen.PrimaryScreen;
-            foreach (var scr in FormsScreen.AllScreens)
+            var addRowWindow = new AddRowWindow("Add Link")
             {
-                if (centerX >= scr.Bounds.Left && centerX < scr.Bounds.Right &&
-                    centerY >= scr.Bounds.Top && centerY < scr.Bounds.Bottom)
-                {
-                    screen = scr;
-                    break;
-                }
-            }
+                WindowStartupLocation = WindowStartupLocation.CenterScreen,
+                Topmost = true,
+                ShowInTaskbar = true,
+                ShowActivated = true
+            };
+            addRowWindow.SetFields(name, path, null, type);
 
-            var addWindow = new AddRowWindow(path, type);
-            addWindow.NameBox.Text = name;
-            addWindow.WindowStartupLocation = WindowStartupLocation.Manual;
-            addWindow.Topmost = true;
-            addWindow.Left = screen.Bounds.Left + (screen.Bounds.Width - addWindow.Width) / 2;
-            addWindow.Top = screen.Bounds.Top + (screen.Bounds.Height - addWindow.Height) / 2;
-            addWindow.ShowInTaskbar = false;
-            addWindow.ShowActivated = true;
-            addWindow.Activate();
-
-            if (addWindow.ShowDialog() == true)
+            if (addRowWindow.ShowDialog() == true)
             {
                 RowItems.Add(new RowItem
                 {
-                    Name = addWindow.ItemName,
-                    Path = addWindow.ItemPath,
-                    Type = addWindow.ItemType,
-                    HotkeyKey = addWindow.ItemHotkeyKey
+                    Name = addRowWindow.InputName,
+                    Path = addRowWindow.InputPath,
+                    Type = addRowWindow.InputType,
+                    HotkeyKey = addRowWindow.InputHotkey
                 });
                 CollectionViewSource.GetDefaultView(RowItems).Refresh();
             }

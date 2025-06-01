@@ -19,7 +19,7 @@ namespace FastLink.Services
             return $"{Prefix}{key}";
         }
 
-        public void RegisterHotkey(Key key, HotkeyType type, EventHandler<HotkeyEventArgs> handler, object? tag = null)
+        public void RegisterHotkey(Key key, EventHandler<HotkeyEventArgs> handler, object? tag = null)
         {
             if (key == Key.None) return;
 
@@ -65,26 +65,17 @@ namespace FastLink.Services
             _hotkeys[keyName] = newInfo;
         }
 
-        public void RefreshAllHotkeys(IEnumerable<RowItem> rowItems, IEnumerable<HotkeyInfo> specialHotkeys)
+        public void ResetHotkeys()
         {
-            // Reset Hotkeys
-            foreach (var name in _hotkeys.Keys.ToList())
+            foreach (var keyName in _hotkeys.Keys.ToList())
             {
                 try
                 {
-                    HotkeyManager.Current.Remove(name);
+                    HotkeyManager.Current.Remove(keyName);
                 }
                 catch { }
             }
             _hotkeys.Clear();
-
-            // RowHotkey 재등록
-            foreach (var row in rowItems)
-                RegisterRowHotkey(row);
-
-            // SpecialHotkey 재등록
-            foreach (var info in specialHotkeys)
-                RegisterHotkey(info.Key, HotkeyType.Special, info.Handlers.First().Handler);
         }
 
         public void RegisterRowHotkey(RowItem row)
@@ -93,7 +84,7 @@ namespace FastLink.Services
             {
                 string keyStr = row.HotkeyKey.ToUpper();
                 if (Enum.TryParse<Key>(keyStr, out var key))
-                    RegisterHotkey(key, HotkeyType.Row, (s, e) => CommonUtils.OpenRowPath(row), row);
+                    RegisterHotkey(key, (s, e) => CommonUtils.OpenRowPath(row), row);
             }
         }
 

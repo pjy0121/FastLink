@@ -1,10 +1,10 @@
-﻿using System.Collections.ObjectModel;
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Collections.ObjectModel;
 using FastLink.Models;
 using FastLink.Utils;
 
@@ -61,7 +61,7 @@ namespace FastLink
             if (DataGrid.SelectedItem is RowItem row)
             {
                 CommonUtils.OpenRowPath(row);
-                Hide();
+                Close();
             }
         }
 
@@ -70,8 +70,7 @@ namespace FastLink
             if (e.Key == Key.Enter && DataGrid.SelectedItem is RowItem row)
             {
                 CommonUtils.OpenRowPath(row);
-                e.Handled = true;
-                Hide();
+                Close();
             }
         }
 
@@ -85,8 +84,7 @@ namespace FastLink
             if (depObj is DataGridRow row && row.Item is RowItem data)
             {
                 CommonUtils.CopyRowPath(data);
-                e.Handled = true;
-                Hide();
+                Close();
                 return;
             }
 

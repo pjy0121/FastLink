@@ -7,6 +7,7 @@ using System.Windows.Media;
 using System.Collections.ObjectModel;
 using FastLink.Models;
 using FastLink.Utils;
+using System.Windows.Threading;
 
 namespace FastLink
 {
@@ -64,6 +65,7 @@ namespace FastLink
             if (DataGrid.SelectedItem is RowItem row)
             {
                 CommonUtils.OpenRowPath(row);
+                e.Handled = true;
                 Close();
             }
         }
@@ -78,17 +80,18 @@ namespace FastLink
             }
         }
 
-        private void DataGrid_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
+        private async void DataGrid_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
         {
             var depObj = e.OriginalSource as DependencyObject;
             while (depObj != null && depObj is not DataGridRow && depObj is not DataGridColumnHeader)
                 depObj = VisualTreeHelper.GetParent(depObj);
 
-            // Row 우클릭 시 path copy 후 숨김
+            // Row 우클릭 시 path copy 후 닫기
             if (depObj is DataGridRow row && row.Item is RowItem data)
             {
                 CommonUtils.CopyRowPath(data);
                 e.Handled = true;
+                await Task.Delay(200);   // 창이 닫힌 후 우클릭되는 현상 방지
                 Close();
                 return;
             }

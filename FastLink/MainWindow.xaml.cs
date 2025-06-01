@@ -21,7 +21,7 @@ namespace FastLink
         private const int BrowerParsingTimeout = 3000;
         public ObservableCollection<RowItem> RowItems { get; set; } = [];
         private QuickViewWindow? _quickViewWindow;
-        private TrayService _trayService;
+        private readonly TrayService _trayService;
         private readonly HotkeyService _hotkeyService = new();
 
         private readonly AppSettings appSettings;
@@ -93,7 +93,7 @@ namespace FastLink
             // Tray icon
             _trayService = new TrayService(IsAutoStart)
             {
-                OnAddRow = () => System.Windows.Application.Current.Dispatcher.Invoke(() => ShowAddRowWindow("", "", RowType.File)),
+                OnAddRow = () => System.Windows.Application.Current.Dispatcher.Invoke(() => ShowAddRowWindow(null, null, RowType.File)),
                 OnAutoStartChanged = (val) => System.Windows.Application.Current.Dispatcher.Invoke(() => IsAutoStart = val),
                 OnExit = () =>
                 {
@@ -305,6 +305,15 @@ namespace FastLink
             }
         }
 
+        private void DataGrid_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter && DataGrid.SelectedItem is RowItem row)
+            {
+                CommonUtils.OpenRowPath(row);
+                e.Handled = true;
+            }
+        }
+
         private void DataGrid_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
         {
             var depObj = e.OriginalSource as DependencyObject;
@@ -336,7 +345,7 @@ namespace FastLink
 
         private void AddButton_Click(object sender, RoutedEventArgs e)
         {
-            ShowAddRowWindow("", "", RowType.File);
+            ShowAddRowWindow(null, null, RowType.File);
         }
 
         private void DeleteButton_Click(object sender, RoutedEventArgs e)

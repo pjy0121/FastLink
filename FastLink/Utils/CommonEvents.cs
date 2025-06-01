@@ -1,4 +1,5 @@
-﻿using System.Windows.Input;
+﻿using System.Windows;
+using System.Windows.Input;
 
 namespace FastLink.Utils
 {
@@ -10,6 +11,7 @@ namespace FastLink.Utils
             {
                 if (sender is System.Windows.Window window)
                     window.Hide();
+                e.Handled = true;
             }
         }
 

@@ -1,4 +1,5 @@
 ﻿using System.Windows;
+using System.Windows.Input;
 using FastLink.Models;
 using FastLink.Utils;
 
@@ -15,8 +16,6 @@ namespace FastLink
         {
             InitializeComponent();
             Title = title;
-
-            PreviewKeyDown += CommonEvents.Window_PreviewKeyDown;
             HotkeyKeyBox.PreviewKeyDown += CommonEvents.KeyBox_PreviewKeyDown;
 
             TypeCombo.SelectedIndex = 0;
@@ -31,6 +30,20 @@ namespace FastLink
             HotkeyKeyBox.Text = hotkey ?? "";
 
             TypeCombo.SelectedIndex = (type == RowType.File) ? 0 : 1;
+        }
+
+        public void AddRowWindow_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if (e.Key == Key.Escape)
+            {
+                Cancel_Click(CancelButton, new RoutedEventArgs());
+                e.Handled = true;
+            }
+            else if (e.Key == Key.Enter)
+            {
+                Ok_Click(OkButton, new RoutedEventArgs());
+                e.Handled = true;
+            }
         }
 
         private void Ok_Click(object sender, RoutedEventArgs e)

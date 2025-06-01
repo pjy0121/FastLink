@@ -39,6 +39,9 @@ namespace FastLink
 
             DataGrid.ItemsSource = _viewSource.View;
             items.CollectionChanged += (s, e) => _viewSource.View.Refresh();
+
+            SearchBox.Focus();
+            Keyboard.Focus(SearchBox);
         }
 
         private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
@@ -70,6 +73,7 @@ namespace FastLink
             if (e.Key == Key.Enter && DataGrid.SelectedItem is RowItem row)
             {
                 CommonUtils.OpenRowPath(row);
+                e.Handled = true;
                 Close();
             }
         }
@@ -84,6 +88,7 @@ namespace FastLink
             if (depObj is DataGridRow row && row.Item is RowItem data)
             {
                 CommonUtils.CopyRowPath(data);
+                e.Handled = true;
                 Close();
                 return;
             }

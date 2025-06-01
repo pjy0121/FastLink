@@ -91,6 +91,7 @@
                               dd:DragDrop.DropHandler="{Binding}"
                               LoadingRow="DataGrid_LoadingRow"
                               MouseDoubleClick="DataGrid_MouseDoubleClick"
+                              PreviewKeyDown="DataGrid_PreviewKeyDown"
                               PreviewMouseRightButtonDown="DataGrid_PreviewMouseRightButtonDown"
                               AlternationCount="10000">
                         <DataGrid.Columns>

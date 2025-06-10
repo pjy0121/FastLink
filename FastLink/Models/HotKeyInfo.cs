@@ -22,4 +22,10 @@ namespace FastLink.Models
                 h.Handler?.Invoke(sender, e);
         }
     }
+
+    public class SpecialHotkey
+    {
+        public Key Key { get; set; }
+        public required HandlerWithTag Handler { get; set; }
+    }
 }

@@ -1,0 +1,141 @@
+﻿<UserControl x:Class="FastLink.LinkWindow"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
+             xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
+             xmlns:dd="clr-namespace:GongSolutions.Wpf.DragDrop;assembly=GongSolutions.Wpf.DragDrop"
+             Background="Transparent">
+    <UserControl.Resources>
+        <Style x:Key="CenterHeaderStyle" TargetType="DataGridColumnHeader">
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="TextElement.FontWeight" Value="Bold"/>
+        </Style>
+    </UserControl.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Top: Search and Table Controls -->
+        <Grid Grid.Row="0" Margin="32,24,32,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel Orientation="Horizontal" Height="32" Margin="0,0,0,8" VerticalAlignment="Center">
+                <iconPacks:PackIconMaterial Kind="Magnify"
+                                            Width="16" Height="16"
+                                            VerticalAlignment="Center"
+                                            HorizontalAlignment="Center"
+                                            Foreground="#888"
+                                            Margin="10,0,6,0"/>
+                <TextBox x:Name="SearchBox" Width="200" VerticalAlignment="Center" TextChanged="SearchBox_TextChanged"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Grid.Column="1">
+                <Button Style="{StaticResource ButtonStyle}" Click="LoadButton_Click" Height="36" Padding="20,0" Margin="0,0,8,0">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <iconPacks:PackIconMaterial Kind="FolderOpen" Width="20" Height="20" Margin="0,0,4,0"/>
+                        <TextBlock Text="Load" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+                <Button Style="{StaticResource ButtonStyle}" Click="AddButton_Click" Height="36" Padding="20,0" Margin="0,0,8,0">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <iconPacks:PackIconMaterial Kind="Plus" Width="20" Height="20" Margin="0,0,4,0"/>
+                        <TextBlock Text="Add" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+        </Grid>
+
+        <!-- Main Table with Border -->
+        <Border Grid.Row="1" Margin="32,12,32,0" Padding="0" BorderBrush="#EEE" BorderThickness="1" CornerRadius="8">
+            <DataGrid x:Name="DataGrid"
+                      AutoGenerateColumns="False"
+                      ItemsSource="{Binding RowItems}"
+                      Background="White"
+                      BorderThickness="0"
+                      RowHeight="28"
+                      HeadersVisibility="Column"
+                      GridLinesVisibility="All"
+                      CanUserAddRows="False"
+                      CanUserDeleteRows="False"
+                      IsReadOnly="True"
+                      SelectionMode="Single"
+                      Style="{DynamicResource MahApps.Styles.DataGrid}"
+                      ColumnHeaderStyle="{StaticResource CenterHeaderStyle}"
+                      dd:DragDrop.IsDragSource="True"
+                      dd:DragDrop.IsDropTarget="True"
+                      dd:DragDrop.DropHandler="{Binding}"
+                      LoadingRow="DataGrid_LoadingRow"
+                      MouseDoubleClick="DataGrid_MouseDoubleClick"
+                      PreviewKeyDown="DataGrid_PreviewKeyDown"
+                      PreviewMouseRightButtonDown="DataGrid_PreviewMouseRightButtonDown"
+                      AlternationCount="10000">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="#" Width="40"
+                                        HeaderStyle="{StaticResource CenterHeaderStyle}"
+                                        ElementStyle="{StaticResource TextBlockStyle}"
+                                        Binding="{Binding RowNumber}" IsReadOnly="True"/>
+                    <DataGridTextColumn Header="Hotkey" Width="80"
+                                        HeaderStyle="{StaticResource CenterHeaderStyle}"
+                                        ElementStyle="{StaticResource TextBlockStyle}"
+                                        Binding="{Binding HotkeyKey}"/>
+                    <DataGridTextColumn Header="Name" Binding="{Binding Name, Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"
+                                        MinWidth="200" Width="5*"
+                                        HeaderStyle="{StaticResource CenterHeaderStyle}"
+                                        ElementStyle="{StaticResource TextBlockStyle}"/>
+                    <DataGridTextColumn Header="Type"
+                                        Binding="{Binding Type}"
+                                        Width="80"
+                                        HeaderStyle="{StaticResource CenterHeaderStyle}"
+                                        ElementStyle="{StaticResource TextBlockStyle}"/>
+                    <DataGridTextColumn Header="Path"
+                                        Binding="{Binding Path, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                        MinWidth="80" Width="2*"
+                                        HeaderStyle="{StaticResource CenterHeaderStyle}"
+                                        ElementStyle="{StaticResource TextBlockStyle}"/>
+                    <DataGridTemplateColumn Header="Controls" Width="80">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                    <Button ToolTip="Copy Path"
+                                            Style="{StaticResource ButtonStyle}"
+                                            Click="CopyPathButton_Click"
+                                            Tag="{Binding}"
+                                            Width="25" Height="21"
+                                            Margin="1,0,0,0"
+                                            Background="Transparent"
+                                            Foreground="Black">
+                                        <iconPacks:PackIconMaterial Kind="ContentCopy" Width="11" Height="11"/>
+                                    </Button>
+                                    <Button ToolTip="Edit"
+                                            Style="{StaticResource ButtonStyle}"
+                                            Click="EditButton_Click"
+                                            Tag="{Binding}"
+                                            Width="25" Height="21"
+                                            Margin="1,0,0,0"
+                                            Background="Transparent"
+                                            Foreground="Black">
+                                        <iconPacks:PackIconMaterial Kind="Pencil" Width="11" Height="11"/>
+                                    </Button>
+                                    <Button Style="{StaticResource ButtonStyle}"
+                                            Click="DeleteButton_Click"
+                                            Tag="{Binding}"
+                                            Width="25" Height="21"
+                                            Margin="1,0,0,0"
+                                            Background="Transparent"
+                                            Foreground="Black">
+                                        <iconPacks:PackIconMaterial Kind="Delete" Width="11" Height="11"/>
+                                    </Button>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Border>
+    </Grid>
+</UserControl>

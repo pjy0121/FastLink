@@ -1,7 +1,6 @@
-﻿using System.IO;
+﻿using FastLink.Utils;
+using System.IO;
 using System.Text.Json;
-using FastLink.Models;
-using FastLink.Utils;
 
 namespace FastLink.Services
 {
@@ -13,7 +12,15 @@ namespace FastLink.Services
         };
 
         public static string SettingsPath =>
-            Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData), "FastLink", "settings.json");
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "FastLink", "settings.json");
+
+        public static AppSettings Settings { get; }
+
+        static SettingsService()
+        {
+            Settings = Load();      // 자동 로드
+            Settings.PropertyChanged += (s, e) => Save(Settings);   // 변경 감지 시 자동 저장
+        }
 
         public static AppSettings Load()
         {
@@ -22,7 +29,9 @@ namespace FastLink.Services
                 if (File.Exists(SettingsPath))
                 {
                     var json = File.ReadAllText(SettingsPath);
-                    return JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
+                    var loaded = JsonSerializer.Deserialize<AppSettings>(json);
+                    if (loaded != null)
+                        return loaded;
                 }
             }
             catch (Exception ex)

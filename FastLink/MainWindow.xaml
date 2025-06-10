@@ -30,147 +30,49 @@
                 <TextBlock Text="Save," FontSize="13" Foreground="#DDD" Margin="20,0,0,0"/>
                 <TextBlock Text="Click," FontSize="13" Foreground="#DDD" Margin="45,0,0,0"/>
                 <TextBlock Text="Open" FontSize="13" Foreground="#DDD" Margin="70,0,0,16"/>
+                <StackPanel Margin="0,32,0,0">
+                    <Button x:Name="LinkTabButton"
+                            Background="Transparent"
+                            Foreground="White"
+                            Padding="16,10"
+                            Margin="8,0,8,8"
+                            Click="LinkTabButton_Click">
+                        <StackPanel Orientation="Horizontal">
+                            <iconPacks:PackIconMaterial Kind="LinkVariant" Width="28" Height="28" Margin="0,0,8,0"/>
+                            <TextBlock Text="Link" FontSize="16" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                    <Button x:Name="ClipboardTabButton"
+                            Background="Transparent"
+                            Foreground="White"
+                            Padding="16,10"
+                            Margin="8,0,8,8"
+                            Click="ClipboardTabButton_Click">
+                        <StackPanel Orientation="Horizontal">
+                            <iconPacks:PackIconMaterial Kind="ClipboardText" Width="28" Height="28" Margin="0,0,8,0"/>
+                            <TextBlock Text="Clipboard" FontSize="16" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
             </StackPanel>
         </Border>
         <Border Background="White" CornerRadius="24" Margin="160,24,24,24">
             <Grid>
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
-                <!-- Top: Search and Table Controls -->
-                <Grid Grid.Row="0" Margin="32,24,32,0">
+
+                <!-- LinkWindow 또는 ClipboardWindow -->
+                <ContentControl x:Name="MainContentControl" Grid.Row="0"/>
+
+                <!-- Hotkey Settings + Auto Start -->
+                <Grid Grid.Row="1" Margin="32,16,32,16">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <StackPanel Orientation="Horizontal" Height="32" Margin="0,0,0,8" VerticalAlignment="Center">
-                        <iconPacks:PackIconMaterial Kind="Magnify"
-                                                    Width="16" Height="16"
-                                                    VerticalAlignment="Center"
-                                                    HorizontalAlignment="Center"
-                                                    Foreground="#888"
-                                                    Margin="10,0,6,0"/>
-                        <TextBox x:Name="SearchBox" Width="200" VerticalAlignment="Center" TextChanged="SearchBox_TextChanged"/>
-                    </StackPanel>
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Grid.Column="1">
-                        <Button Style="{StaticResource ButtonStyle}" Click="LoadButton_Click" Height="36" Padding="20,0" Margin="0,0,8,0">
-                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                <iconPacks:PackIconMaterial Kind="FolderOpen" Width="20" Height="20" Margin="0,0,4,0"/>
-                                <TextBlock Text="Load" VerticalAlignment="Center"/>
-                            </StackPanel>
-                        </Button>
-                        <Button Style="{StaticResource ButtonStyle}" Click="AddButton_Click" Height="36" Padding="20,0" Margin="0,0,8,0">
-                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                <iconPacks:PackIconMaterial Kind="Plus" Width="20" Height="20" Margin="0,0,4,0"/>
-                                <TextBlock Text="Add" VerticalAlignment="Center"/>
-                            </StackPanel>
-                        </Button>
-                    </StackPanel>
-                </Grid>
-
-                <!-- Main Table with Border -->
-                <Border Grid.Row="1" Margin="32,12,32,0" Padding="0" BorderBrush="#EEE" BorderThickness="1" CornerRadius="8">
-                    <DataGrid x:Name="DataGrid"
-                              AutoGenerateColumns="False"
-                              ItemsSource="{Binding RowItems}"
-                              Background="White"
-                              BorderThickness="0"
-                              RowHeight="28"
-                              HeadersVisibility="Column"
-                              GridLinesVisibility="All"
-                              CanUserAddRows="False"
-                              CanUserDeleteRows="False"
-                              IsReadOnly="True"
-                              SelectionMode="Single"
-                              Style="{DynamicResource MahApps.Styles.DataGrid}"
-                              ColumnHeaderStyle="{StaticResource CenterHeaderStyle}"
-                              dd:DragDrop.IsDragSource="True"
-                              dd:DragDrop.IsDropTarget="True"
-                              dd:DragDrop.DropHandler="{Binding}"
-                              LoadingRow="DataGrid_LoadingRow"
-                              MouseDoubleClick="DataGrid_MouseDoubleClick"
-                              PreviewKeyDown="DataGrid_PreviewKeyDown"
-                              PreviewMouseRightButtonDown="DataGrid_PreviewMouseRightButtonDown"
-                              AlternationCount="10000">
-                        <DataGrid.Columns>
-                            <!-- Numbering -->
-                            <DataGridTextColumn Header="#" Width="40"
-                                                HeaderStyle="{StaticResource CenterHeaderStyle}"
-                                                ElementStyle="{StaticResource TextBlockStyle}"
-                                                Binding="{Binding RowNumber}" IsReadOnly="True"/>
-                            <!-- Hotkey -->
-                            <DataGridTextColumn Header="Hotkey" Width="80"
-                                                    HeaderStyle="{StaticResource CenterHeaderStyle}"
-                                                    ElementStyle="{StaticResource TextBlockStyle}"
-                                                    Binding="{Binding HotkeyKey}"/>
-                            <!-- Name -->
-                            <DataGridTextColumn Header="Name" Binding="{Binding Name, Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"
-                                                MinWidth="200" Width="5*"
-                                                HeaderStyle="{StaticResource CenterHeaderStyle}"
-                                                ElementStyle="{StaticResource TextBlockStyle}"/>
-                            <!-- Type -->
-                            <DataGridTextColumn Header="Type"
-                                                Binding="{Binding Type}"
-                                                Width="80"
-                                                HeaderStyle="{StaticResource CenterHeaderStyle}"
-                                                ElementStyle="{StaticResource TextBlockStyle}"/>
-                            <!-- Path -->
-                            <DataGridTextColumn Header="Path"
-                                                Binding="{Binding Path, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                MinWidth="80" Width="2*"
-                                                HeaderStyle="{StaticResource CenterHeaderStyle}"
-                                                ElementStyle="{StaticResource TextBlockStyle}"/>
-                            <!-- Copy/Delete -->
-                            <DataGridTemplateColumn Header="Controls" Width="80">
-                                <DataGridTemplateColumn.CellTemplate>
-                                    <DataTemplate>
-                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                                            <Button ToolTip="Copy Path"
-                                                    Style="{StaticResource ButtonStyle}"
-                                                    Click="CopyPathButton_Click"
-                                                    Tag="{Binding}"
-                                                    Width="25" Height="21"
-                                                    Margin="1,0,0,0"
-                                                    Background="Transparent"
-                                                    Foreground="Black">
-                                                <iconPacks:PackIconMaterial Kind="ContentCopy" Width="11" Height="11"/>
-                                            </Button>
-                                            <Button ToolTip="Edit"
-                                                    Style="{StaticResource ButtonStyle}"
-                                                    Click="EditButton_Click"
-                                                    Tag="{Binding}"
-                                                    Width="25" Height="21"
-                                                    Margin="1,0,0,0"
-                                                    Background="Transparent"
-                                                    Foreground="Black">
-                                                <iconPacks:PackIconMaterial Kind="Pencil" Width="11" Height="11"/>
-                                            </Button>
-                                            <Button Style="{StaticResource ButtonStyle}"
-                                                    Click="DeleteButton_Click"
-                                                    Tag="{Binding}"
-                                                    Width="25" Height="21"
-                                                    Margin="1,0,0,0"
-                                                    Background="Transparent"
-                                                    Foreground="Black">
-                                                <iconPacks:PackIconMaterial Kind="Delete" Width="11" Height="11"/>
-                                            </Button>
-                                        </StackPanel>
-                                    </DataTemplate>
-                                </DataGridTemplateColumn.CellTemplate>
-                            </DataGridTemplateColumn>
-                        </DataGrid.Columns>
-                    </DataGrid>
-                </Border>
-
-                <!-- Bottom Section: Hotkey Settings + Auto Start (Grid로 좌우 분리) -->
-                <Grid Grid.Row="2" Margin="32,16,32,16">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-                    <!-- Hotkey Settings (Left) -->
+                    <!-- Hotkey Settings -->
                     <Border Grid.Column="0" Padding="16" BorderBrush="#EEE" BorderThickness="1" CornerRadius="8">
                         <StackPanel>
                             <TextBlock Text="Hotkey Settings" FontWeight="Bold" FontSize="15" Margin="0,0,0,8"/>
@@ -214,7 +116,7 @@
                             </StackPanel>
                         </StackPanel>
                     </Border>
-                    <!-- Auto Start (Right, Bottom) -->
+                    <!-- Auto Start -->
                     <StackPanel Grid.Column="1" VerticalAlignment="Bottom" HorizontalAlignment="Right" Margin="24,0,0,0">
                         <CheckBox x:Name="AutoStartCheck"
                                   Content="Auto Start with Windows"

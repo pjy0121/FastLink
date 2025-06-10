@@ -4,12 +4,8 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Data;
 using System.Windows.Media;
-using System.Windows.Controls.Primitives;
-using System.Collections.Specialized;
 using FastLink.Models;
 using FastLink.Services;
 using FastLink.Utils;
@@ -19,28 +15,25 @@ namespace FastLink
     public partial class MainWindow : MetroWindow, GongSolutions.Wpf.DragDrop.IDropTarget, INotifyPropertyChanged
     {
         private const int BrowerParsingTimeout = 3000;
-        public ObservableCollection<RowItem> RowItems { get; set; } = [];
+        private LinkWindow _linkWindow;
+        private ClipboardWindow _clipboardWindow;
         private QuickViewWindow? _quickViewWindow;
         private readonly TrayService _trayService;
-        private readonly HotkeyService _hotkeyService = new();
 
-        private readonly AppSettings appSettings;
-        private readonly List<HotkeyInfo> _specialHotkeys;
+        private readonly List<SpecialHotkey> _specialHotkeys;
         private bool _isExitByTray = false;
-        private bool _isFileLoading = false;
 
         public bool IsAutoStart
         {
-            get => appSettings.AutoStart;
+            get => SettingsService.Settings.AutoStart;
             set
             {
-                if (appSettings.AutoStart != value)
+                if (SettingsService.Settings.AutoStart != value)
                 {
-                    appSettings.AutoStart = value;
+                    SettingsService.Settings.AutoStart = value;
                     OnPropertyChanged(nameof(IsAutoStart));
                     AutoStartService.Set(value);
                     _trayService?.SetAutoStartChecked(value);
-                    SettingsService.Save(appSettings);
                 }
             }
         }
@@ -51,44 +44,31 @@ namespace FastLink
             PreviewKeyDown += CommonEvents.Window_PreviewKeyDown;
             AddHotkeyKeyBox.PreviewKeyDown += CommonEvents.KeyBox_PreviewKeyDown;
             QuickViewHotkeyBox.PreviewKeyDown += CommonEvents.KeyBox_PreviewKeyDown;
+            SelectLinkTab();
 
-            appSettings = SettingsService.Load();
             DataContext = this;
 
             _specialHotkeys =
             [
                 new ()
                 {
-                    Key = Enum.TryParse<Key>(appSettings.AddHotkey, out var addHotkey) ? addHotkey : Key.A,
-                    Handlers =
+                    Key = Enum.TryParse<Key>(SettingsService.Settings.AddHotkey, out var addHotkey) ? addHotkey : Key.A,
+                    Handler = new HandlerWithTag
                     {
-                        new HandlerWithTag
-                        {
-                            Handler = OnAddRowHotkeyPressed,
-                            Tag = null
-                        }
+                        Handler = OnAddRowHotkeyPressed,
+                        Tag = "AddLink"
                     }
                 },
                 new()
                 {
-                    Key = Enum.TryParse<Key>(appSettings.QuickViewHotkey, out var quickViewHotkey) ? quickViewHotkey : Key.Q,
-                    Handlers =
+                    Key = Enum.TryParse<Key>(SettingsService.Settings.QuickViewHotkey, out var quickViewHotkey) ? quickViewHotkey : Key.Q,
+                    Handler = new HandlerWithTag
                     {
-                        new HandlerWithTag
-                        {
-                            Handler = OnQuickViewHotkeyPressed,
-                            Tag = null
-                        }
+                        Handler = OnQuickViewHotkeyPressed,
+                        Tag = "QuickView"
                     }
                 }
             ];
-
-            // Load data
-            LoadFastLinkFile(appSettings.SaveFilePath);
-
-            // Search filter
-            CollectionView view = (CollectionView)CollectionViewSource.GetDefaultView(RowItems);
-            view.Filter = DataGridFilter;
 
             // Tray icon
             _trayService = new TrayService(IsAutoStart)
@@ -104,70 +84,54 @@ namespace FastLink
             };
 
             LoadUIFromSettings();
-            RowItems.CollectionChanged += RowItems_CollectionChanged;
+            RegisterHotkeys();
 
             if (IsAutoStart)    // 자동 시작 시 트레이만 보이도록 설정
                 Hide();
         }
 
-        private void RowItems_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
-        {
-            if (_isFileLoading) return;
-
-            switch (e.Action)
-            {
-                case NotifyCollectionChangedAction.Add:
-                    foreach (RowItem newRow in e.NewItems!)
-                        OnRowAdded(newRow);
-                    break;
-                case NotifyCollectionChangedAction.Remove:
-                    foreach (RowItem oldRow in e.OldItems!)
-                        OnRowDeleted(oldRow);
-                    break;
-                case NotifyCollectionChangedAction.Move:
-                    RefreshAllHotkeys();
-                    break;
-            }
-            SaveRows();
-        }
-
-        private void OnRowAdded(RowItem row)
-        {
-            _hotkeyService.RegisterRowHotkey(row);
-        }
-
-        private void OnRowDeleted(RowItem row)
-        {
-            _hotkeyService.RemoveRowHotkey(row);
-        }
-
         private void LoadUIFromSettings()
         {
-            AddCtrlCheck.IsChecked = appSettings.BaseModifier.Contains("Control");
-            AddShiftCheck.IsChecked = appSettings.BaseModifier.Contains("Shift");
-            AddAltCheck.IsChecked = appSettings.BaseModifier.Contains("Alt");
-            _hotkeyService.BaseModifier = ParseModifiers(appSettings.BaseModifier);
+            AddCtrlCheck.IsChecked = SettingsService.Settings.BaseModifier.Contains("Control");
+            AddShiftCheck.IsChecked = SettingsService.Settings.BaseModifier.Contains("Shift");
+            AddAltCheck.IsChecked = SettingsService.Settings.BaseModifier.Contains("Alt");
+            HotkeyService.BaseModifier = ParseModifiers(SettingsService.Settings.BaseModifier);
 
-            AddHotkeyKeyBox.Text = appSettings.AddHotkey;
-            QuickViewHotkeyBox.Text = appSettings.QuickViewHotkey;
-            AutoStartCheck.IsChecked = appSettings.AutoStart;
+            AddHotkeyKeyBox.Text = SettingsService.Settings.AddHotkey;
+            QuickViewHotkeyBox.Text = SettingsService.Settings.QuickViewHotkey;
+            AutoStartCheck.IsChecked = SettingsService.Settings.AutoStart;
         }
 
-        private void LoadFastLinkFile(string filePath)
+        private void LinkTabButton_Click(object sender, RoutedEventArgs e)
         {
-            _isFileLoading = true;
+            SelectLinkTab();
+        }
 
-            var loaded = FileService.LoadRows(filePath);
-            RowItems.Clear();
-            foreach (var item in loaded)
-                RowItems.Add(item);
+        private void ClipboardTabButton_Click(object sender, RoutedEventArgs e)
+        {
+            SelectClipboardTab();
+        }
 
-            CollectionViewSource.GetDefaultView(RowItems).Refresh();
-            appSettings.SaveFilePath = filePath;
-            SettingsService.Save(appSettings);
-            RefreshAllHotkeys();
+        private void SelectLinkTab()
+        {
+            _linkWindow ??= new LinkWindow();
+            MainContentControl.Content = _linkWindow;
+            HighlightTabButton(LinkTabButton);
+        }
 
-            _isFileLoading = false;
+        private void SelectClipboardTab()
+        {
+            _clipboardWindow ??= new ClipboardWindow();
+            MainContentControl.Content = _clipboardWindow;
+            HighlightTabButton(ClipboardTabButton);
+        }
+
+        private void HighlightTabButton(System.Windows.Controls.Button selected)
+        {
+            LinkTabButton.Background = selected == LinkTabButton ?
+                new SolidColorBrush(System.Windows.Media.Color.FromRgb(230, 230, 250)) : System.Windows.Media.Brushes.Transparent;
+            ClipboardTabButton.Background = selected == ClipboardTabButton ?
+                new SolidColorBrush(System.Windows.Media.Color.FromRgb(230, 230, 250)) : System.Windows.Media.Brushes.Transparent;
         }
 
         private static ModifierKeys ParseModifiers(string mod)
@@ -187,17 +151,6 @@ namespace FastLink
                 Hide();
             }
             else _trayService.Dispose();
-        }
-
-        private void RefreshAllHotkeys()
-        {
-            _hotkeyService.ResetHotkeys();
-
-            foreach (var row in RowItems)
-                _hotkeyService.RegisterRowHotkey(row);
-
-            foreach (var info in _specialHotkeys)
-                _hotkeyService.RegisterHotkey(info.Key, info.Handlers.First().Handler);
         }
 
         private async void OnAddRowHotkeyPressed(object? sender, HotkeyEventArgs e)
@@ -241,7 +194,7 @@ namespace FastLink
                 _quickViewWindow = null;
             }
 
-            _quickViewWindow = new QuickViewWindow(RowItems);
+            _quickViewWindow = new QuickViewWindow(_linkWindow.RowItems);
             _quickViewWindow.Closed += (s, args) => _quickViewWindow = null;
 
             var desktop = SystemParameters.WorkArea;
@@ -252,198 +205,55 @@ namespace FastLink
             e.Handled = true;
         }
 
-        private void CopyPathButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is System.Windows.Controls.Button button && button.Tag is RowItem row)
-                CommonUtils.CopyRowPath(row);
-        }
-
-        private void EditButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is System.Windows.Controls.Button button && button.DataContext is RowItem row)
-            {
-                var editRowWindow = new AddRowWindow("Edit Link")
-                {
-                    Owner = this,
-                    WindowStartupLocation = WindowStartupLocation.CenterOwner,
-                    Topmost = true,
-                    ShowInTaskbar = false,
-                    ShowActivated = true
-                };
-                editRowWindow.SetFields(row.Name, row.Path, row.HotkeyKey, row.Type);
-
-                if (editRowWindow.ShowDialog() == true)
-                {
-                    row.Name = editRowWindow.InputName;
-                    row.Path = editRowWindow.InputPath;
-                    row.Type = editRowWindow.InputType;
-                    row.HotkeyKey = editRowWindow.InputHotkey;
-
-                    RefreshAllHotkeys();    // Hotkey가 바뀔 수 있으므로 초기화
-                    SaveRows();
-                    CollectionViewSource.GetDefaultView(DataGrid.ItemsSource).Refresh();
-                }
-            }
-        }
-
-        private void DataGrid_LoadingRow(object sender, DataGridRowEventArgs e)
-        {
-            if (e.Row.Item is RowItem item)
-            {
-                var view = CollectionViewSource.GetDefaultView(DataGrid.ItemsSource) as CollectionView;
-                int index = view?.IndexOf(item) ?? -1;
-                item.RowNumber = index + 1;
-            }
-        }
-
-        private void DataGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
-        {
-            if (DataGrid.SelectedItem is RowItem row)
-            {
-                CommonUtils.OpenRowPath(row);
-                e.Handled = true;
-            }
-        }
-
-        private void DataGrid_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
-        {
-            if (e.Key == Key.Enter && DataGrid.SelectedItem is RowItem row)
-            {
-                CommonUtils.OpenRowPath(row);
-                e.Handled = true;
-            }
-        }
-
-        private void DataGrid_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
-        {
-            var depObj = e.OriginalSource as DependencyObject;
-            while (depObj != null && depObj is not DataGridRow && depObj is not DataGridColumnHeader)
-                depObj = VisualTreeHelper.GetParent(depObj);
-
-            // Row 우클릭 시 path copy
-            if (depObj is DataGridRow row && row.Item is RowItem data)
-            {
-                CommonUtils.CopyRowPath(data);
-                e.Handled = true;
-                return;
-            }
-
-            // Header 우클릭 시 정렬 해제 및 순서 복원
-            if (depObj is DataGridColumnHeader)
-            {
-                var view = CollectionViewSource.GetDefaultView(DataGrid.ItemsSource);
-                if (view != null && view.CanSort)
-                    view.SortDescriptions.Clear();
-
-                // 모든 컬럼의 정렬 표식 제거
-                foreach (var column in DataGrid.Columns)
-                    column.SortDirection = null;
-
-                e.Handled = true;
-            }
-        }
-
-        private void AddButton_Click(object sender, RoutedEventArgs e)
-        {
-            ShowAddRowWindow(null, null, RowType.File);
-        }
-
-        private void DeleteButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is System.Windows.Controls.Button { Tag: RowItem row })
-            {
-                var result = System.Windows.MessageBox.Show("Are you sure you want to delete?",
-                    "Confirm Delete", MessageBoxButton.YesNo, MessageBoxImage.Question);
-                if (result == MessageBoxResult.Yes)
-                    RowItems.Remove(row);
-            }
-        }
-
-        private void LoadButton_Click(object sender, RoutedEventArgs e)
-        {
-            var dialog = new Microsoft.Win32.OpenFileDialog
-            {
-                Filter = "FastLink file (*.json)|*.json|All files (*.*)|*.*",
-                Title = "Select file to load"
-            };
-            if (dialog.ShowDialog() == true)
-            {
-                try
-                {
-                    LoadFastLinkFile(dialog.FileName);
-                    SaveRows();
-                }
-                catch (Exception ex)
-                {
-                    System.Windows.MessageBox.Show("Failed to load input file.\n\n" + ex.Message,
-                        "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-            }
-        }
-
-        private void SaveRows()
-        {
-            try
-            {
-                FileService.SaveRows(appSettings.SaveFilePath, RowItems);
-            }
-            catch (Exception ex)
-            {
-                System.Windows.MessageBox.Show("Failed to save input file.\n\n" + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        private bool DataGridFilter(object item)
-        {
-            if (string.IsNullOrWhiteSpace(SearchBox.Text))
-                return true;
-            var row = item as RowItem;
-            var keyword = SearchBox.Text.Trim().ToLower();
-            return (row.Name?.ToLower().Contains(keyword) ?? false)
-                || (row.Path?.ToLower().Contains(keyword) ?? false)
-                || (row.Type.ToString().ToLower().Contains(keyword))
-                || (row.HotkeyKey?.ToLower().Contains(keyword) ?? false);
-        }
-
-        private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
-        {
-            CollectionViewSource.GetDefaultView(RowItems).Refresh();
-        }
-
         private void ApplyModifiers_Click(object sender, RoutedEventArgs e)
         {
             var modifier =
                 ((AddCtrlCheck.IsChecked == true ? "Control," : "") +
                 (AddShiftCheck.IsChecked == true ? "Shift," : "") +
                 (AddAltCheck.IsChecked == true ? "Alt," : "")).TrimEnd(',');
-            appSettings.BaseModifier = modifier;
-            _hotkeyService.BaseModifier = ParseModifiers(modifier);
+            SettingsService.Settings.BaseModifier = modifier;
+            HotkeyService.BaseModifier = ParseModifiers(modifier);
 
-            SettingsService.Save(appSettings);
-            RefreshAllHotkeys();
+            HotkeyService.ResetHotkeys();
+            RegisterHotkeys();
+            _linkWindow.RegisterHotkeys();
+            // _clipboardWindow.RegisterHotkeys();
+
             System.Windows.MessageBox.Show("Base modifiers has been changed.");
         }
 
         private void ApplyAddHotkey_Click(object sender, RoutedEventArgs e)
         {
-            _specialHotkeys[0].Key = Enum.TryParse<Key>(AddHotkeyKeyBox.Text.Trim(), out var k) ? k : Key.A;
-            appSettings.AddHotkey = AddHotkeyKeyBox.Text.Trim();
+            string hotkey = AddHotkeyKeyBox.Text.Trim();
+            _specialHotkeys[0].Key = Enum.TryParse<Key>(hotkey, out var k) ? k : Key.A;
+            SettingsService.Settings.AddHotkey = hotkey;
 
-            SettingsService.Save(appSettings);
-            RefreshAllHotkeys();
+            ChangeSpecialHotkey(_specialHotkeys[0]);
             System.Windows.MessageBox.Show("Add hotkey has been changed.");
         }
 
         private void QuickViewHotkeyApplyButton_Click(object sender, RoutedEventArgs e)
         {
-            _specialHotkeys[1].Key = Enum.TryParse<Key>(QuickViewHotkeyBox.Text.Trim(), out var k) ? k : Key.Q;
-            appSettings.QuickViewHotkey = QuickViewHotkeyBox.Text.Trim();
+            string hotkey = QuickViewHotkeyBox.Text.Trim();
+            _specialHotkeys[1].Key = Enum.TryParse<Key>(hotkey, out var k) ? k : Key.Q;
+            SettingsService.Settings.QuickViewHotkey = hotkey;
 
-            SettingsService.Save(appSettings);
-            RefreshAllHotkeys();
+            ChangeSpecialHotkey(_specialHotkeys[1]);
             System.Windows.MessageBox.Show("QuickView hotkey has been changed.");
         }
 
+
+        private static void ChangeSpecialHotkey(SpecialHotkey hotkey)
+        {
+            HotkeyService.RemoveHotkey(hotkey.Key, hotkey.Handler.Tag);
+            HotkeyService.RegisterHotkey(hotkey.Key, hotkey.Handler.Handler, hotkey.Handler.Tag);
+        }
+
+        private void RegisterHotkeys()
+        {
+            foreach (var specialHotkey in _specialHotkeys)
+                HotkeyService.RegisterHotkey(specialHotkey.Key, specialHotkey.Handler.Handler, specialHotkey.Handler.Tag);
+        }
         private void AutoStartCheck_Checked(object sender, RoutedEventArgs e)
         {
             IsAutoStart = true;
@@ -466,16 +276,7 @@ namespace FastLink
             addRowWindow.SetFields(name, path, null, type);
 
             if (addRowWindow.ShowDialog() == true)
-            {
-                RowItems.Add(new RowItem
-                {
-                    Name = addRowWindow.InputName,
-                    Path = addRowWindow.InputPath,
-                    Type = addRowWindow.InputType,
-                    HotkeyKey = addRowWindow.InputHotkey
-                });
-                CollectionViewSource.GetDefaultView(RowItems).Refresh();
-            }
+                _linkWindow.AddRow(addRowWindow.InputName, addRowWindow.InputPath, addRowWindow.InputHotkey, addRowWindow.InputType);
         }
 
         public event PropertyChangedEventHandler PropertyChanged;

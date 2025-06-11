@@ -3,8 +3,6 @@ using System.Windows.Input;
 
 namespace FastLink.Models
 {
-    public enum HotkeyType { Special, Row }
-
     public class HandlerWithTag
     {
         public EventHandler<HotkeyEventArgs> Handler { get; set; }

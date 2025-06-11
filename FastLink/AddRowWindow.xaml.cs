@@ -23,11 +23,11 @@ namespace FastLink
 
         public void SetFields(string? name, string? path, string? hotkey, RowType type)
         {
-            NameBox.Text = name ?? "";
-            PathBox.Text = path ?? "";
+            NameBox.Text = name ?? string.Empty;
+            PathBox.Text = path ?? string.Empty;
             PathBox.CaretIndex = PathBox.Text.Length;   // Text의 뒷 부분이 보이도록 설정
             PathBox.Focus();
-            HotkeyKeyBox.Text = hotkey ?? "";
+            HotkeyKeyBox.Text = hotkey ?? string.Empty;
 
             TypeCombo.SelectedIndex = (type == RowType.File) ? 0 : 1;
         }

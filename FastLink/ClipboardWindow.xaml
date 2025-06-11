@@ -4,8 +4,10 @@
              xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
              xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
              xmlns:dd="clr-namespace:GongSolutions.Wpf.DragDrop;assembly=GongSolutions.Wpf.DragDrop"
+             xmlns:utils="clr-namespace:FastLink.Utils"
              Background="Transparent">
     <UserControl.Resources>
+        <utils:ByteArrayToImageConverter x:Key="ByteArrayToImageConverter"/>
         <Style x:Key="CenterHeaderStyle" TargetType="DataGridColumnHeader">
             <Setter Property="HorizontalContentAlignment" Value="Center"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
@@ -57,7 +59,6 @@
                       ItemsSource="{Binding RowItems}"
                       Background="White"
                       BorderThickness="0"
-                      RowHeight="28"
                       HeadersVisibility="Column"
                       GridLinesVisibility="All"
                       CanUserAddRows="False"
@@ -76,27 +77,93 @@
                       AlternationCount="10000">
                 <DataGrid.Columns>
                     <DataGridTextColumn Header="#" Width="40"
-                                        HeaderStyle="{StaticResource CenterHeaderStyle}"
-                                        ElementStyle="{StaticResource TextBlockStyle}"
-                                        Binding="{Binding RowNumber}" IsReadOnly="True"/>
+                        HeaderStyle="{StaticResource CenterHeaderStyle}"
+                        ElementStyle="{StaticResource TextBlockStyle}"
+                        Binding="{Binding RowNumber}" IsReadOnly="True"/>
                     <DataGridTextColumn Header="Hotkey" Width="80"
-                                        HeaderStyle="{StaticResource CenterHeaderStyle}"
-                                        ElementStyle="{StaticResource TextBlockStyle}"
-                                        Binding="{Binding HotkeyKey}"/>
+                        HeaderStyle="{StaticResource CenterHeaderStyle}"
+                        ElementStyle="{StaticResource TextBlockStyle}"
+                        Binding="{Binding HotkeyKey}"/>
                     <DataGridTextColumn Header="Name" Binding="{Binding Name, Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"
-                                        MinWidth="200" Width="5*"
-                                        HeaderStyle="{StaticResource CenterHeaderStyle}"
-                                        ElementStyle="{StaticResource TextBlockStyle}"/>
+                        MinWidth="200" Width="5*"
+                        HeaderStyle="{StaticResource CenterHeaderStyle}"
+                        ElementStyle="{StaticResource TextBlockStyle}"/>
                     <DataGridTextColumn Header="Type"
-                                        Binding="{Binding Type}"
-                                        Width="80"
-                                        HeaderStyle="{StaticResource CenterHeaderStyle}"
-                                        ElementStyle="{StaticResource TextBlockStyle}"/>
+                        Binding="{Binding Type}"
+                        Width="80"
+                        HeaderStyle="{StaticResource CenterHeaderStyle}"
+                        ElementStyle="{StaticResource TextBlockStyle}"/>
                     <DataGridTextColumn Header="Path"
-                                        Binding="{Binding Path, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                        MinWidth="80" Width="2*"
-                                        HeaderStyle="{StaticResource CenterHeaderStyle}"
-                                        ElementStyle="{StaticResource TextBlockStyle}"/>
+                        Binding="{Binding Path, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                        MinWidth="80" Width="2*"
+                        HeaderStyle="{StaticResource CenterHeaderStyle}"
+                        ElementStyle="{StaticResource TextBlockStyle}"/>
+                    <DataGridTemplateColumn Header="Preview" Width="120">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <ContentControl Content="{Binding}">
+                                    <ContentControl.Style>
+                                        <Style TargetType="ContentControl">
+                                            <Style.Triggers>
+                                                <!-- 텍스트 미리보기 -->
+                                                <DataTrigger Binding="{Binding Type}" Value="Text">
+                                                    <Setter Property="ContentTemplate">
+                                                        <Setter.Value>
+                                                            <DataTemplate>
+                                                                <TextBlock Text="{Binding Data}" TextTrimming="CharacterEllipsis" />
+                                                            </DataTemplate>
+                                                        </Setter.Value>
+                                                    </Setter>
+                                                </DataTrigger>
+                                                <!-- 이미지 미리보기 -->
+                                                <DataTrigger Binding="{Binding Type}" Value="Image">
+                                                    <Setter Property="ContentTemplate">
+                                                        <Setter.Value>
+                                                            <DataTemplate>
+                                                                <Image Width="100" Height="100"
+                                                       Source="{Binding Data, Converter={StaticResource ByteArrayToImageConverter}}"
+                                                       Stretch="Uniform"/>
+                                                            </DataTemplate>
+                                                        </Setter.Value>
+                                                    </Setter>
+                                                </DataTrigger>
+                                                <!-- HTML 미리보기 -->
+                                                <DataTrigger Binding="{Binding Type}" Value="Html">
+                                                    <Setter Property="ContentTemplate">
+                                                        <Setter.Value>
+                                                            <DataTemplate>
+                                                                <TextBlock Text="{Binding Data}" TextTrimming="CharacterEllipsis" />
+                                                            </DataTemplate>
+                                                        </Setter.Value>
+                                                    </Setter>
+                                                </DataTrigger>
+                                                <!-- 파일 목록 미리보기 -->
+                                                <DataTrigger Binding="{Binding Type}" Value="FileList">
+                                                    <Setter Property="ContentTemplate">
+                                                        <Setter.Value>
+                                                            <DataTemplate>
+                                                                <TextBlock Text="{Binding Data[0]}" TextTrimming="CharacterEllipsis"/>
+                                                            </DataTemplate>
+                                                        </Setter.Value>
+                                                    </Setter>
+                                                </DataTrigger>
+                                                <!-- 웹 미리보기 -->
+                                                <DataTrigger Binding="{Binding Type}" Value="Web">
+                                                    <Setter Property="ContentTemplate">
+                                                        <Setter.Value>
+                                                            <DataTemplate>
+                                                                <TextBlock Text="{Binding Data}" Foreground="Blue" TextDecorations="Underline" TextTrimming="CharacterEllipsis"/>
+                                                            </DataTemplate>
+                                                        </Setter.Value>
+                                                    </Setter>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </ContentControl.Style>
+                                </ContentControl>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
                     <DataGridTemplateColumn Header="Controls" Width="80">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>

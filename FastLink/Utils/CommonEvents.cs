@@ -9,7 +9,7 @@ namespace FastLink.Utils
         {
             if (e.Key == Key.Escape)
             {
-                if (sender is System.Windows.Window window)
+                if (sender is Window window)
                     window.Hide();
                 e.Handled = true;
             }

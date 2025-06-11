@@ -2,14 +2,13 @@
 
 namespace FastLink.Models
 {
-    public enum RowType { File, Web }
 
     public class RowItem : INotifyPropertyChanged
     {
         private int _rowNumber;
-        private string _name = "";
-        private string _path = "";
-        private string _hotkeyKey = "";
+        private string _name = string.Empty;
+        private string _path = string.Empty;
+        private string _hotkeyKey = string.Empty;
         private RowType _type = RowType.File;
 
         public int RowNumber

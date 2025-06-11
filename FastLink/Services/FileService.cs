@@ -1,24 +1,25 @@
-﻿using System.Collections.ObjectModel;
+﻿using Newtonsoft.Json;
+using System.Collections.ObjectModel;
 using System.IO;
-using System.Text.Json;
-using FastLink.Models;
 using FastLink.Utils;
 
 namespace FastLink.Services
 {
     public class FileService
     {
-        private static readonly JsonSerializerOptions WriteOptions = new()
+        private static readonly JsonSerializerSettings Settings = new()
         {
-            WriteIndented = true
+            TypeNameHandling = TypeNameHandling.All,
+            Formatting = Formatting.Indented
         };
 
-        public static ObservableCollection<RowItem> LoadRows(string filePath)
+        public static ObservableCollection<T> LoadRows<T>(string filePath)
         {
             if (!File.Exists(filePath)) return [];
             try
             {
-                var items = JsonSerializer.Deserialize<ObservableCollection<RowItem>>(File.ReadAllText(filePath));
+                var json = File.ReadAllText(filePath);
+                var items = JsonConvert.DeserializeObject<ObservableCollection<T>>(json, Settings);
                 return items ?? [];
             }
             catch (Exception ex)
@@ -28,15 +29,15 @@ namespace FastLink.Services
             return [];
         }
 
-        public static void SaveRows(string filePath, ObservableCollection<RowItem> rows)
+        public static void SaveRows<T>(string filePath, ObservableCollection<T> rows)
         {
             try
             {
                 var dir = Path.GetDirectoryName(filePath);
-                if (!Directory.Exists(dir))
+                if (!Directory.Exists(dir) && !string.IsNullOrEmpty(dir))
                     Directory.CreateDirectory(dir);
 
-                var json = JsonSerializer.Serialize(rows, WriteOptions);
+                var json = JsonConvert.SerializeObject(rows, Settings);
                 File.WriteAllText(filePath, json);
             }
             catch (Exception ex)

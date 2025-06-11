@@ -35,11 +35,6 @@ namespace FastLink.Services
                     while (left < right)
                     {
                         int mid = (left + right) / 2;
-                        if (info.Handlers[mid].Tag is RowItem)
-                        {
-                            RowItem midRow = info.Handlers[mid].Tag as RowItem;
-                            Logger.Debug($"{keyName} - {midRow.RowNumber} ({midRow.Name}) vs {row.RowNumber} ({row.Name})");
-                        }
                         if (info.Handlers[mid].Tag is not RowItem midTag || midTag.RowNumber < row.RowNumber)
                             left = mid + 1;
                         else right = mid;

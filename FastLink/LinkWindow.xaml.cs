@@ -17,7 +17,7 @@ namespace FastLink
     {
         private bool _isFileLoading = false;
 
-        public ObservableCollection<RowItem> RowItems { get; set; } = new();
+        public ObservableCollection<RowItem> RowItems { get; set; } = [];
 
         public LinkWindow()
         {
@@ -46,7 +46,7 @@ namespace FastLink
             ClearHotkeys();
             RowItems.Clear();
 
-            var rows = FileService.LoadRows(filePath);
+            var rows = FileService.LoadRows<RowItem>(filePath);
             foreach (var row in rows)
                 RowItems.Add(row);
 
@@ -192,9 +192,9 @@ namespace FastLink
                 depObj = VisualTreeHelper.GetParent(depObj);
 
             // Row 우클릭 시 path copy
-            if (depObj is DataGridRow row && row.Item is RowItem data)
+            if (depObj is DataGridRow gridRow && gridRow.Item is RowItem row)
             {
-                CommonUtils.CopyRowPath(data);
+                CommonUtils.CopyRowPath(row);
                 e.Handled = true;
                 return;
             }

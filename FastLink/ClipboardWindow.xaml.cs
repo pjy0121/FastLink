@@ -2,30 +2,34 @@
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.IO;
-using System.Linq;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using FastLink.Models;
 using FastLink.Services;
 using FastLink.Utils;
+using Clipboard = System.Windows.Clipboard;
+using DataFormats = System.Windows.DataFormats;
 
 namespace FastLink
 {
     public partial class ClipboardWindow : INotifyPropertyChanged, GongSolutions.Wpf.DragDrop.IDropTarget
     {
-        public ObservableCollection<RowItem> RowItems { get; set; } = new ObservableCollection<RowItem>();
+        private bool _isFileLoading = false;
+
+        public ObservableCollection<RowItem> RowItems { get; set; } = [];
 
         public ClipboardWindow()
         {
             InitializeComponent();
             DataContext = this;
 
-            // 데이터 로딩 (예: 파일에서)
-            LoadRows();
+            LoadFastLinkFile(SettingsService.Settings.ClipboardFilePath);
 
             // DataGrid 필터링
             CollectionView view = (CollectionView)CollectionViewSource.GetDefaultView(RowItems);
@@ -34,24 +38,127 @@ namespace FastLink
             RowItems.CollectionChanged += RowItems_CollectionChanged;
         }
 
-        private void LoadRows()
+        public void CaptureClipboardData()
         {
-            // 예시: 파일에서 JSON 로딩
-            var filePath = "FastLink.json";
-            if (File.Exists(filePath))
+            System.Windows.IDataObject data = Clipboard.GetDataObject();
+            if (data == null) return;
+
+            if (data.GetDataPresent(DataFormats.Bitmap))
             {
-                var loaded = FileService.LoadRows(filePath);
-                RowItems.Clear();
-                foreach (var item in loaded)
+                var image = Clipboard.GetImage();
+                if (image != null)
+                {
+                    // 썸네일 생성
+                    var thumbnail = CommonUtils.CreateThumbnail(image, 200, 200);
+                    var thumbnailBytes = CommonUtils.BitmapSourceToBytes(thumbnail);
+
+                    // 원본 이미지 파일 저장
+                    var dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "FastLink", "Images");
+                    Directory.CreateDirectory(dir);
+                    var filename = $"{Guid.NewGuid()}.png";
+                    var path = Path.Combine(dir, filename);
+                    using (var fs = new FileStream(path, FileMode.Create))
+                    {
+                        var encoder = new PngBitmapEncoder();
+                        encoder.Frames.Add(BitmapFrame.Create(image));
+                        encoder.Save(fs);
+                    }
+
+                    var item = new ClipboardItem<byte[]>
+                    {
+                        Type = RowType.Image,
+                        Name = "image",
+                        Path = path,            // 원본 파일 경로
+                        Data = thumbnailBytes   // 썸네일만 data에 저장
+                    };
                     RowItems.Add(item);
+                }
             }
+            else if (data.GetDataPresent(DataFormats.Text))
+            {
+                var text = Clipboard.GetText();
+                var isUrl = Regex.IsMatch(text, @"^(https?|ftp)://[^\s/$.?#].[^\s]*$", RegexOptions.IgnoreCase);
+
+                var item = new ClipboardItem<string>
+                {
+                    Type = isUrl ? RowType.Web : RowType.Text,
+                    Name = text.Length > 30 ? string.Concat(text.AsSpan(0, 30), "...") : text,
+                    Data = text
+                };
+                RowItems.Add(item);
+            }
+            else if (data.GetDataPresent(DataFormats.Html))
+            {
+                var html = Clipboard.GetData(DataFormats.Html) as string;
+                var item = new ClipboardItem<string>
+                {
+                    Type = RowType.Html,
+                    Name = html.Length > 30 ? html.Substring(0, 30) + "..." : "HTML",
+                    Data = html
+                };
+                RowItems.Add(item);
+            }
+            else if (data.GetDataPresent(DataFormats.FileDrop))
+            {
+                var files = Clipboard.GetFileDropList().Cast<string>().ToList();
+                var item = new ClipboardItem<List<string>>
+                {
+                    Type = RowType.FileList,
+                    Name = files.FirstOrDefault() ?? "File List",
+                    Data = files
+                };
+                RowItems.Add(item);
+            }
+        }
+
+        private void UpdateRowNumbers()
+        {
+            for (int i = 0; i < RowItems.Count; i++)
+                RowItems[i].RowNumber = i + 1;  // 1부터 시작
+        }
+
+        private void LoadFastLinkFile(string filePath)
+        {
+            _isFileLoading = true;
+
+            ClearHotkeys();
+            RowItems.Clear();
+
+            var rows = FileService.LoadRows<RowItem>(filePath);
+            foreach (var row in rows)
+                RowItems.Add(row);
+
+            UpdateRowNumbers();
+            RegisterHotkeys();
+
+            RefreshView();
+            SettingsService.Settings.ClipboardFilePath = filePath;
+
+            _isFileLoading = false;
+        }
+
+        public void ClearHotkeys()
+        {
+            foreach (var row in RowItems)
+                HotkeyService.RemoveRowHotkey(row);
+        }
+
+        public void RegisterHotkeys()
+        {
+            foreach (var row in RowItems)
+                HotkeyService.RegisterRowHotkey(row);
+        }
+
+        public void RefreshView()
+        {
+            CollectionViewSource.GetDefaultView(RowItems).Refresh();
         }
 
         private void SaveRows()
         {
             try
             {
-                FileService.SaveRows("FastLink.json", RowItems);
+                FileService.SaveRows(SettingsService.Settings.ClipboardFilePath, RowItems);
             }
             catch (Exception ex)
             {
@@ -59,9 +166,69 @@ namespace FastLink
             }
         }
 
+        public void AddRow(string name, string path, string hotkeyKey, RowType rowType)
+        {
+            RowItems.Add(new RowItem
+            {
+                Name = name,
+                Path = path,
+                HotkeyKey = hotkeyKey,
+                Type = rowType
+            });
+        }
+
         private void RowItems_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
+            if (_isFileLoading) return;
+
+            UpdateRowNumbers();
+            switch (e.Action)
+            {
+                case NotifyCollectionChangedAction.Add:
+                    foreach (RowItem newRow in e.NewItems!)
+                        OnRowAdded(newRow);
+                    break;
+                case NotifyCollectionChangedAction.Remove:
+                    foreach (RowItem oldRow in e.OldItems!)
+                        OnRowDeleted(oldRow);
+                    break;
+                case NotifyCollectionChangedAction.Move:
+                    foreach (RowItem newRow in e.NewItems!)
+                        OnRowMoved(newRow);
+                    break;
+            }
+            RefreshView();
             SaveRows();
+        }
+
+        private static void OnRowAdded(RowItem row)
+        {
+            HotkeyService.RegisterRowHotkey(row);
+        }
+
+        private static void OnRowDeleted(RowItem row)
+        {
+            HotkeyService.RemoveRowHotkey(row);
+
+            if (row.Type == RowType.Image && !string.IsNullOrEmpty(row.Path))
+            {
+                try
+                {
+                    if (File.Exists(row.Path))
+                        File.Delete(row.Path);
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error(ex); // 예외 로깅
+                }
+            }
+        }
+
+        private static void OnRowMoved(RowItem row)
+        {
+            // 삭제했다가 다시 등록 => 바뀐 index 기준으로 재정렬됨
+            HotkeyService.RemoveRowHotkey(row);
+            HotkeyService.RegisterRowHotkey(row);
         }
 
         private bool DataGridFilter(object item)
@@ -78,7 +245,7 @@ namespace FastLink
 
         private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
         {
-            CollectionViewSource.GetDefaultView(RowItems).Refresh();
+            RefreshView();
         }
 
         private void DataGrid_LoadingRow(object sender, DataGridRowEventArgs e)
@@ -95,8 +262,38 @@ namespace FastLink
         {
             if (DataGrid.SelectedItem is RowItem row)
             {
-                CommonUtils.OpenRowPath(row);
-                e.Handled = true;
+                switch (row.Type)
+                {
+                    case RowType.Text:
+                    case RowType.Web:
+                        if (row is ClipboardItem<string> textItem)
+                            Clipboard.SetText(textItem.Data ?? string.Empty);
+                        break;
+                    case RowType.Image:
+                        if (row is ClipboardItem<byte[]> imageItem && !string.IsNullOrEmpty(imageItem.Path)
+                            && File.Exists(imageItem.Path))
+                        {
+                            var image = new BitmapImage(new Uri(imageItem.Path));
+                            Clipboard.SetImage(image);
+                        }
+                        break;
+                    case RowType.Html:
+                        if (row is ClipboardItem<string> htmlItem)
+                        {
+                            var dataObj = new System.Windows.DataObject();
+                            dataObj.SetData(DataFormats.Html, htmlItem.Data);
+                            Clipboard.SetDataObject(dataObj);
+                        }
+                        break;
+                    case RowType.FileList:
+                        if (row is ClipboardItem<List<string>> fileItem)
+                        {
+                            var files = new StringCollection();
+                            files.AddRange([.. fileItem.Data]);
+                            Clipboard.SetFileDropList(files);
+                        }
+                        break;
+                }
             }
         }
 
@@ -114,14 +311,6 @@ namespace FastLink
             var depObj = e.OriginalSource as DependencyObject;
             while (depObj != null && depObj is not DataGridRow && depObj is not DataGridColumnHeader)
                 depObj = VisualTreeHelper.GetParent(depObj);
-
-            // Row 우클릭 시 path copy
-            if (depObj is DataGridRow row && row.Item is RowItem data)
-            {
-                CommonUtils.CopyRowPath(data);
-                e.Handled = true;
-                return;
-            }
 
             // Header 우클릭 시 정렬 해제 및 순서 복원
             if (depObj is DataGridColumnHeader)
@@ -157,7 +346,7 @@ namespace FastLink
                     Type = addRowWindow.InputType,
                     HotkeyKey = addRowWindow.InputHotkey
                 });
-                CollectionViewSource.GetDefaultView(RowItems).Refresh();
+                RefreshView();
             }
         }
 
@@ -179,9 +368,13 @@ namespace FastLink
                     row.Name = editRowWindow.InputName;
                     row.Path = editRowWindow.InputPath;
                     row.Type = editRowWindow.InputType;
+
+                    string oldHotkeyKey = row.HotkeyKey;
                     row.HotkeyKey = editRowWindow.InputHotkey;
+
+                    HotkeyService.MoveHandlerToNewHotkey(row, oldHotkeyKey);
                     SaveRows();
-                    CollectionViewSource.GetDefaultView(RowItems).Refresh();
+                    RefreshView();
                 }
             }
         }
@@ -214,11 +407,7 @@ namespace FastLink
             {
                 try
                 {
-                    var loaded = FileService.LoadRows(dialog.FileName);
-                    RowItems.Clear();
-                    foreach (var item in loaded)
-                        RowItems.Add(item);
-                    SaveRows();
+                    LoadFastLinkFile(dialog.FileName);
                 }
                 catch (Exception ex)
                 {

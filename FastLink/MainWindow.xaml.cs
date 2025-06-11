@@ -44,7 +44,7 @@ namespace FastLink
             PreviewKeyDown += CommonEvents.Window_PreviewKeyDown;
             AddHotkeyKeyBox.PreviewKeyDown += CommonEvents.KeyBox_PreviewKeyDown;
             QuickViewHotkeyBox.PreviewKeyDown += CommonEvents.KeyBox_PreviewKeyDown;
-            SelectLinkTab();
+            SelectTab(Tab.Link);
 
             DataContext = this;
 
@@ -57,6 +57,15 @@ namespace FastLink
                     {
                         Handler = OnAddRowHotkeyPressed,
                         Tag = "AddLink"
+                    }
+                },
+                new ()
+                {
+                    Key = Enum.TryParse<Key>(SettingsService.Settings.CopyHotkey, out var copyHotkey) ? copyHotkey : Key.C,
+                    Handler = new HandlerWithTag
+                    {
+                        Handler = OnCopyClipboardHotkeyPressed,
+                        Tag = "CopyClipboard"
                     }
                 },
                 new()
@@ -104,26 +113,28 @@ namespace FastLink
 
         private void LinkTabButton_Click(object sender, RoutedEventArgs e)
         {
-            SelectLinkTab();
+            SelectTab(Tab.Link);
         }
 
         private void ClipboardTabButton_Click(object sender, RoutedEventArgs e)
         {
-            SelectClipboardTab();
+            SelectTab(Tab.Clipboard);
         }
 
-        private void SelectLinkTab()
+        private void SelectTab(Tab index)
         {
-            _linkWindow ??= new LinkWindow();
-            MainContentControl.Content = _linkWindow;
-            HighlightTabButton(LinkTabButton);
-        }
-
-        private void SelectClipboardTab()
-        {
-            _clipboardWindow ??= new ClipboardWindow();
-            MainContentControl.Content = _clipboardWindow;
-            HighlightTabButton(ClipboardTabButton);
+            if (index == Tab.Link)
+            {
+                _linkWindow ??= new LinkWindow();
+                MainContentControl.Content = _linkWindow;
+                HighlightTabButton(LinkTabButton);
+            }
+            else
+            {
+                _clipboardWindow ??= new ClipboardWindow();
+                MainContentControl.Content = _clipboardWindow;
+                HighlightTabButton(ClipboardTabButton);
+            }
         }
 
         private void HighlightTabButton(System.Windows.Controls.Button selected)
@@ -155,8 +166,10 @@ namespace FastLink
 
         private async void OnAddRowHotkeyPressed(object? sender, HotkeyEventArgs e)
         {
+            SelectTab(Tab.Link);
+
             string? path = ExplorerBrowserService.GetActiveExplorerPath();
-            string? name = "";
+            string? name = string.Empty;
             RowType type = RowType.File;
 
             if (!string.IsNullOrWhiteSpace(path))
@@ -185,6 +198,12 @@ namespace FastLink
             e.Handled = true;
         }
 
+        private void OnCopyClipboardHotkeyPressed(Object? sender, HotkeyEventArgs e)
+        {
+            SelectTab(Tab.Clipboard);
+            _clipboardWindow.CaptureClipboardData();
+        }
+
         private void OnQuickViewHotkeyPressed(object? sender, HotkeyEventArgs e)
         {
             // 이미 객체가 있다면 제거
@@ -194,7 +213,7 @@ namespace FastLink
                 _quickViewWindow = null;
             }
 
-            _quickViewWindow = new QuickViewWindow(_linkWindow.RowItems);
+            _quickViewWindow = new QuickViewWindow(_linkWindow.RowItems, _clipboardWindow.RowItems);
             _quickViewWindow.Closed += (s, args) => _quickViewWindow = null;
 
             var desktop = SystemParameters.WorkArea;
@@ -208,9 +227,9 @@ namespace FastLink
         private void ApplyModifiers_Click(object sender, RoutedEventArgs e)
         {
             var modifier =
-                ((AddCtrlCheck.IsChecked == true ? "Control," : "") +
-                (AddShiftCheck.IsChecked == true ? "Shift," : "") +
-                (AddAltCheck.IsChecked == true ? "Alt," : "")).TrimEnd(',');
+                ((AddCtrlCheck.IsChecked == true ? "Control," : string.Empty) +
+                (AddShiftCheck.IsChecked == true ? "Shift," : string.Empty) +
+                (AddAltCheck.IsChecked == true ? "Alt," : string.Empty)).TrimEnd(',');
             SettingsService.Settings.BaseModifier = modifier;
             HotkeyService.BaseModifier = ParseModifiers(modifier);
 

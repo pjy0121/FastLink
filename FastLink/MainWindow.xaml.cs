@@ -15,8 +15,8 @@ namespace FastLink
     public partial class MainWindow : MetroWindow, GongSolutions.Wpf.DragDrop.IDropTarget, INotifyPropertyChanged
     {
         private const int BrowerParsingTimeout = 3000;
-        private LinkWindow _linkWindow;
-        private ClipboardWindow _clipboardWindow;
+        private readonly LinkWindow _linkWindow = new();
+        private readonly ClipboardWindow _clipboardWindow = new();
         private QuickViewWindow? _quickViewWindow;
         private readonly TrayService _trayService;
 
@@ -121,17 +121,15 @@ namespace FastLink
             SelectTab(Tab.Clipboard);
         }
 
-        private void SelectTab(Tab index)
+        private void SelectTab(Tab tab)
         {
-            if (index == Tab.Link)
+            if (tab == Tab.Link)
             {
-                _linkWindow ??= new LinkWindow();
                 MainContentControl.Content = _linkWindow;
                 HighlightTabButton(LinkTabButton);
             }
             else
             {
-                _clipboardWindow ??= new ClipboardWindow();
                 MainContentControl.Content = _clipboardWindow;
                 HighlightTabButton(ClipboardTabButton);
             }
@@ -236,7 +234,7 @@ namespace FastLink
             HotkeyService.ResetHotkeys();
             RegisterHotkeys();
             _linkWindow.RegisterHotkeys();
-            // _clipboardWindow.RegisterHotkeys();
+            _clipboardWindow.RegisterHotkeys();
 
             System.Windows.MessageBox.Show("Base modifiers has been changed.");
         }

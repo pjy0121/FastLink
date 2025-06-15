@@ -3,6 +3,7 @@
                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                  xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
                  xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
+                 xmlns:utils="clr-namespace:FastLink.Utils"
                  Title="Quick View"
                  Width="500"
                  Height="440"
@@ -17,64 +18,171 @@
             <Setter Property="VerticalContentAlignment" Value="Center"/>
             <Setter Property="FontWeight" Value="Bold"/>
         </Style>
+        <Style x:Key="IndexTabLabelStyle" TargetType="Label">
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Foreground" Value="#888"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style x:Key="IndexTabLabelSelectedStyle" TargetType="Label" BasedOn="{StaticResource IndexTabLabelStyle}">
+            <Setter Property="Foreground" Value="#2196F3"/>
+        </Style>
+        <utils:ByteArrayToImageConverter x:Key="ByteArrayToImageConverter"/>
     </mah:MetroWindow.Resources>
-    <Border Background="White" CornerRadius="16" Padding="12">
-        <DockPanel LastChildFill="True">
-            <Grid Height="32" Margin="0,0,0,8" DockPanel.Dock="Top">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="32"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-                <iconPacks:PackIconMaterial Kind="Magnify"
-                                            Width="16" Height="16"
-                                            VerticalAlignment="Center"
-                                            HorizontalAlignment="Center"
-                                            Foreground="#888"
-                                            Margin="6,0,6,0"
-                                            Grid.Column="0"/>
-                <TextBox x:Name="SearchBox"
-                         Grid.Column="1"
-                         Height="32"
-                         FontSize="14"
-                         VerticalContentAlignment="Center"
-                         TextChanged="SearchBox_TextChanged"/>
-            </Grid>
-            <DataGrid x:Name="DataGrid"
-                  AutoGenerateColumns="False"
-                  CanUserAddRows="False"
-                  CanUserDeleteRows="False"
-                  HeadersVisibility="Column"
-                  IsReadOnly="True"
-                  SelectionMode="Single"
-                  RowHeaderWidth="0"
-                  GridLinesVisibility="All"
-                  BorderThickness="0"
-                  ScrollViewer.VerticalScrollBarVisibility="Auto"
-                  MouseDoubleClick="DataGrid_MouseDoubleClick"
-                  PreviewMouseRightButtonDown="DataGrid_PreviewMouseRightButtonDown"
-                  PreviewKeyDown="DataGrid_PreviewKeyDown"
-                  LoadingRow="DataGrid_LoadingRow"
-                  HorizontalGridLinesBrush="#DDDDDD"
-                  VerticalGridLinesBrush="#DDDDDD">
-                <DataGrid.Columns>
-                    <DataGridTextColumn Header="#" Width="40"
-                                    HeaderStyle="{StaticResource CenterHeaderStyle}"
-                                    ElementStyle="{StaticResource TextBlockStyle}"
-                                    Binding="{Binding RowNumber}" IsReadOnly="True"/>
-                    <DataGridTextColumn Header="Hotkey" Width="60"
-                                    HeaderStyle="{StaticResource CenterHeaderStyle}"
-                                    ElementStyle="{StaticResource TextBlockStyle}"
-                                    Binding="{Binding HotkeyKey}"/>
-                    <DataGridTextColumn Header="Name" Width="*"
-                                    HeaderStyle="{StaticResource CenterHeaderStyle}"
-                                    ElementStyle="{StaticResource TextBlockStyle}"
-                                    Binding="{Binding Name}"/>
-                    <DataGridTextColumn Header="Type" Width="60"
-                                    HeaderStyle="{StaticResource CenterHeaderStyle}"
-                                    ElementStyle="{StaticResource TextBlockStyle}"
-                                    Binding="{Binding Type}"/>
-                </DataGrid.Columns>
-            </DataGrid>
-        </DockPanel>
-    </Border>
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="30"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <!-- Vertical Tabs -->
+        <StackPanel Grid.Column="0" Orientation="Vertical" VerticalAlignment="Stretch" Background="Transparent">
+            <Border Background="Transparent" BorderThickness="0" Height="100">
+                <Label x:Name="LblLinkTab" Content="Link" Style="{StaticResource IndexTabLabelSelectedStyle}" MouseDown="LblLinkTab_MouseDown" HorizontalAlignment="Center">
+                    <Label.LayoutTransform>
+                        <RotateTransform Angle="-90"/>
+                    </Label.LayoutTransform>
+                </Label>
+            </Border>
+            <Border Background="Transparent" BorderThickness="0" Height="100">
+                <Label x:Name="LblClipboardTab" Content="Clipboard" Style="{StaticResource IndexTabLabelStyle}" MouseDown="LblClipboardTab_MouseDown" HorizontalAlignment="Center">
+                    <Label.LayoutTransform>
+                        <RotateTransform Angle="-90"/>
+                    </Label.LayoutTransform>
+                </Label>
+            </Border>
+        </StackPanel>
+        <!-- Main Contents -->
+        <Border Grid.Column="1" Background="White" CornerRadius="16" Padding="12" Margin="0">
+            <DockPanel LastChildFill="True">
+                <Grid Height="32" Margin="0,0,0,8" DockPanel.Dock="Top">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="32"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <iconPacks:PackIconMaterial Kind="Magnify"
+                                                Width="16" Height="16"
+                                                VerticalAlignment="Center"
+                                                HorizontalAlignment="Center"
+                                                Foreground="#888"
+                                                Margin="6,0,6,0"
+                                                Grid.Column="0"/>
+                    <TextBox x:Name="SearchBox"
+                             Grid.Column="1"
+                             Height="32"
+                             FontSize="14"
+                             VerticalContentAlignment="Center"
+                             PreviewKeyDown="SearchBox_PreviewKeyDown"
+                             TextChanged="SearchBox_TextChanged"/>
+                </Grid>
+                <DataGrid x:Name="MainDataGrid"
+                      AutoGenerateColumns="False"
+                      CanUserAddRows="False"
+                      CanUserDeleteRows="False"
+                      HeadersVisibility="Column"
+                      IsReadOnly="True"
+                      SelectionMode="Single"
+                      RowHeaderWidth="0"
+                      GridLinesVisibility="All"
+                      BorderThickness="0"
+                      KeyboardNavigation.TabNavigation="None"
+                      KeyboardNavigation.DirectionalNavigation="Continue"
+                      IsTabStop="False"
+                      ScrollViewer.VerticalScrollBarVisibility="Auto"
+                      ScrollViewer.CanContentScroll="True"
+                      VirtualizingPanel.IsVirtualizing="True"
+                      VirtualizingPanel.VirtualizationMode="Standard"
+                      MouseDoubleClick="MainDataGrid_MouseDoubleClick"
+                      PreviewKeyDown="MainDataGrid_PreviewKeyDown"
+                      PreviewMouseRightButtonDown="MainDataGrid_PreviewMouseRightButtonDown"
+                      LoadingRow="MainDataGrid_LoadingRow"
+                      HorizontalGridLinesBrush="#DDDDDD"
+                      VerticalGridLinesBrush="#DDDDDD"
+                      AlternationCount="10000">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="#" Width="40"
+                            HeaderStyle="{StaticResource CenterHeaderStyle}"
+                            ElementStyle="{StaticResource TextBlockStyle}"
+                            Binding="{Binding RowNumber}" IsReadOnly="True"/>
+                        <DataGridTextColumn Header="Hotkey" Width="80"
+                            HeaderStyle="{StaticResource CenterHeaderStyle}"
+                            ElementStyle="{StaticResource TextBlockStyle}"
+                            Binding="{Binding HotkeyKey}"/>
+                        <DataGridTextColumn Header="Name" MinWidth="120" Width="3*"
+                            HeaderStyle="{StaticResource CenterHeaderStyle}"
+                            ElementStyle="{StaticResource TextBlockStyle}"
+                            Binding="{Binding Name, Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"/>
+                        <DataGridTextColumn Header="Type"
+                            Binding="{Binding Type}"
+                            Width="80"
+                            HeaderStyle="{StaticResource CenterHeaderStyle}"
+                            ElementStyle="{StaticResource TextBlockStyle}"/>
+                        <DataGridTemplateColumn x:Name="PreviewColumn" Header="Preview" Width="120">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <ContentControl Content="{Binding}">
+                                        <ContentControl.Style>
+                                            <Style TargetType="ContentControl">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Type}" Value="Text">
+                                                        <Setter Property="ContentTemplate">
+                                                            <Setter.Value>
+                                                                <DataTemplate>
+                                                                    <TextBlock Text="{Binding Data}" TextTrimming="CharacterEllipsis" />
+                                                                </DataTemplate>
+                                                            </Setter.Value>
+                                                        </Setter>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding Type}" Value="Image">
+                                                        <Setter Property="ContentTemplate">
+                                                            <Setter.Value>
+                                                                <DataTemplate>
+                                                                    <Image Width="100" Height="100"
+                                                                           Source="{Binding Data, Converter={StaticResource ByteArrayToImageConverter}}"
+                                                                           Stretch="Uniform"/>
+                                                                </DataTemplate>
+                                                            </Setter.Value>
+                                                        </Setter>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding Type}" Value="Html">
+                                                        <Setter Property="ContentTemplate">
+                                                            <Setter.Value>
+                                                                <DataTemplate>
+                                                                    <TextBlock Text="{Binding Data}" TextTrimming="CharacterEllipsis" />
+                                                                </DataTemplate>
+                                                            </Setter.Value>
+                                                        </Setter>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding Type}" Value="FileList">
+                                                        <Setter Property="ContentTemplate">
+                                                            <Setter.Value>
+                                                                <DataTemplate>
+                                                                    <TextBlock Text="{Binding Data[0]}" TextTrimming="CharacterEllipsis"/>
+                                                                </DataTemplate>
+                                                            </Setter.Value>
+                                                        </Setter>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding Type}" Value="Web">
+                                                        <Setter Property="ContentTemplate">
+                                                            <Setter.Value>
+                                                                <DataTemplate>
+                                                                    <TextBlock Text="{Binding Data}" Foreground="Blue" TextDecorations="Underline" TextTrimming="CharacterEllipsis"/>
+                                                                </DataTemplate>
+                                                            </Setter.Value>
+                                                        </Setter>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </ContentControl.Style>
+                                    </ContentControl>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </DockPanel>
+        </Border>
+    </Grid>
 </mah:MetroWindow>

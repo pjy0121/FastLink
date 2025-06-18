@@ -109,15 +109,15 @@ namespace FastLink
             {
                 MainDataGrid.ItemsSource = _linkItems;
                 PreviewColumn.Visibility = Visibility.Collapsed;
-                LblLinkTab.Style = (Style)FindResource("IndexTabLabelSelectedStyle");
-                LblClipboardTab.Style = (Style)FindResource("IndexTabLabelStyle");
+                LinkTabLabel.Style = (Style)FindResource("IndexTabLabelSelectedStyle");
+                ClipboardTabLabel.Style = (Style)FindResource("IndexTabLabelStyle");
             }
             else
             {
                 MainDataGrid.ItemsSource = _clipboardItems;
                 PreviewColumn.Visibility = Visibility.Visible;
-                LblLinkTab.Style = (Style)FindResource("IndexTabLabelStyle");
-                LblClipboardTab.Style = (Style)FindResource("IndexTabLabelSelectedStyle");
+                LinkTabLabel.Style = (Style)FindResource("IndexTabLabelStyle");
+                ClipboardTabLabel.Style = (Style)FindResource("IndexTabLabelSelectedStyle");
             }
 
             CollectionViewSource.GetDefaultView(MainDataGrid.ItemsSource)?.Refresh();
@@ -126,8 +126,8 @@ namespace FastLink
             Dispatcher.BeginInvoke(new Action(() => SearchBox.Focus()), System.Windows.Threading.DispatcherPriority.Input);
         }
 
-        private void LblLinkTab_MouseDown(object sender, MouseButtonEventArgs e) => SelectTab(Tab.Link);
-        private void LblClipboardTab_MouseDown(object sender, MouseButtonEventArgs e) => SelectTab(Tab.Clipboard);
+        private void LinkTabLabel_MouseDown(object sender, MouseButtonEventArgs e) => SelectTab(Tab.Link);
+        private void ClipboardTabLabel_MouseDown(object sender, MouseButtonEventArgs e) => SelectTab(Tab.Clipboard);
 
         private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
         {
@@ -149,65 +149,89 @@ namespace FastLink
             if (e.Key == Key.Tab)
             {
                 e.Handled = true;
-                SelectTab(_selectedTab == Tab.Link ? Tab.Clipboard : Tab.Link);
+                SearchBox.Focus();
             }
             else if (e.Key == Key.Enter)
             {
-                HandleRowAction();
-                e.Handled = true;
+                if (MainDataGrid.SelectedItem is RowItem row)
+                {
+                    HandleRowAction(row);
+                    e.Handled = true;
+                    Close();
+                }
             }
         }
 
         private void MainDataGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
-            HandleRowAction();
+            if (MainDataGrid.SelectedItem is RowItem row)
+            {
+                HandleRowAction(row);
+                e.Handled = true;
+                Close();
+            }
         }
 
         private async void MainDataGrid_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
         {
             var depObj = e.OriginalSource as DependencyObject;
-            while (depObj != null && depObj is not DataGridRow)
+            while (depObj != null && depObj is not DataGridRow && depObj is not DataGridColumnHeader)
                 depObj = VisualTreeHelper.GetParent(depObj);
 
-            if (depObj is DataGridRow gridRow && gridRow.Item is RowItem row)
+            // Header 우클릭 시 정렬 해제 및 순서 복원
+            if (depObj is DataGridColumnHeader)
             {
-                if (row.Type == RowType.File || row.Type == RowType.Web)
-                {
-                    Clipboard.SetText(row.Path ?? string.Empty);    // copy path to clipboard
+                var view = CollectionViewSource.GetDefaultView(MainDataGrid.ItemsSource);
+                if (view != null && view.CanSort)
+                    view.SortDescriptions.Clear();
 
-                    e.Handled = true;
-                    await Task.Delay(200);
-                }
-                else
-                {
-                    CommonUtils.OpenRowPath(row);  // open original file if path exists
-                    e.Handled = true;
-                }
+                foreach (var column in MainDataGrid.Columns)
+                    column.SortDirection = null;
+
+                e.Handled = true;
+            }
+            else if (depObj is DataGridRow gridRow && gridRow.Item is RowItem row)
+            {
+                HandleRowSubaction(row);
+                e.Handled = true;
+
+                await Task.Delay(200);
                 Close();
             }
         }
 
         private void SearchBox_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (e.Key == Key.Tab)
+            if (e.Key == Key.Tab || e.Key == Key.Up || e.Key == Key.Down || e.Key == Key.Left || e.Key == Key.Right)
             {
                 e.Handled = true;
-                SelectTab(_selectedTab == Tab.Link ? Tab.Clipboard : Tab.Link);
-            }
-
-            // 방향키 입력 시 DataGrid로 포커스 이동
-            if (e.Key == Key.Up || e.Key == Key.Down || e.Key == Key.Left || e.Key == Key.Right)
-            {
-                e.Handled = true;
-                FocusFirstCellInGrid();
+                FocusFirstCellInGrid();     // DataGrid로 포커스 이동
             }
         }
 
-        private void HandleRowAction()
+        private static void HandleRowSubaction(RowItem row)
         {
-            if (MainDataGrid.SelectedItem is not RowItem row)
-                return;
+            switch (row.Type)
+            {
+                case RowType.File:
+                case RowType.Web:
+                    Clipboard.SetText(row.Path ?? string.Empty);    // copy path to clipboard
+                    break;
+                case RowType.Text:
+                    if (row is ClipboardItem<string> textItem)
+                        Clipboard.SetText(textItem.Data ?? string.Empty);
+                    break;
+                case RowType.Image:
+                    CommonUtils.OpenRowPath(row);  // open original file if path exists
+                    break;
+                default:
+                    HandleRowAction(row);
+                    break;
+            }
+        }
 
+        private static void HandleRowAction(RowItem row)
+        {
             switch (row.Type)
             {
                 case RowType.File:
@@ -235,7 +259,7 @@ namespace FastLink
                     }
                     break;
                 case RowType.FileList:
-                    if (row is ClipboardItem<System.Collections.Generic.List<string>> fileItem)
+                    if (row is ClipboardItem<List<string>> fileItem)
                     {
                         var files = new System.Collections.Specialized.StringCollection();
                         files.AddRange([.. fileItem.Data]);
@@ -243,7 +267,6 @@ namespace FastLink
                     }
                     break;
             }
-            Close();
         }
     }
 }

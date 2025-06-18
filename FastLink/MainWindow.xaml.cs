@@ -1,19 +1,24 @@
 ﻿using NHotkey;
 using MahApps.Metro.Controls;
-using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.IO;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using System.ComponentModel;
+using System.Collections.ObjectModel;
 using FastLink.Models;
 using FastLink.Services;
 using FastLink.Utils;
+using Clipboard = System.Windows.Clipboard;
+using DataFormats = System.Windows.DataFormats;
+
 
 namespace FastLink
 {
     public partial class MainWindow : MetroWindow, GongSolutions.Wpf.DragDrop.IDropTarget, INotifyPropertyChanged
     {
+        private const int MaxNameLength = 32;
         private const int BrowerParsingTimeout = 3000;
         private readonly LinkWindow _linkWindow = new();
         private readonly ClipboardWindow _clipboardWindow = new();
@@ -65,7 +70,7 @@ namespace FastLink
                     Handler = new HandlerWithTag
                     {
                         Handler = OnCopyClipboardHotkeyPressed,
-                        Tag = "CopyClipboard"
+                        Tag = "AddClipboard"
                     }
                 },
                 new()
@@ -199,11 +204,48 @@ namespace FastLink
         private void OnCopyClipboardHotkeyPressed(Object? sender, HotkeyEventArgs e)
         {
             SelectTab(Tab.Clipboard);
-            _clipboardWindow.CaptureClipboardData();
+
+            System.Windows.IDataObject dataObject = Clipboard.GetDataObject();
+
+            string name = string.Empty;
+            object? data = null;
+            RowType rowType = RowType.Unknown;
+            if (dataObject.GetDataPresent(DataFormats.Bitmap))
+            {
+                name = "Image";
+                data = Clipboard.GetImage();
+                rowType = RowType.Image;
+            }
+            else if (dataObject.GetDataPresent(DataFormats.Text))
+            {
+                var text = Clipboard.GetText();
+                name = text.Length > MaxNameLength ? string.Concat(text.AsSpan(0, MaxNameLength), "...") : text;
+                data = text;
+                rowType = RowType.Text;
+            }
+            else if (dataObject.GetDataPresent(DataFormats.Html))
+            {
+                var html = Clipboard.GetData(DataFormats.Html) as string;
+                name = html.Length > MaxNameLength ? string.Concat(html.AsSpan(0, MaxNameLength), "...") : "HTML";
+                data = html;
+                rowType = RowType.Html;
+            }
+            else if (dataObject.GetDataPresent(DataFormats.FileDrop))
+            {
+                var files = Clipboard.GetFileDropList().Cast<string>().ToList();
+                name = files.FirstOrDefault() ?? "File List";
+                data = files;
+                rowType = RowType.FileList;
+            }
+
+            System.Windows.Application.Current.Dispatcher.Invoke(
+                () => ShowAddClipboardWindow(name, rowType, data));
+            e.Handled = true;
         }
 
         private void OnQuickViewHotkeyPressed(object? sender, HotkeyEventArgs e)
         {
+            //!!!!!!!!![TODO] 열려 있는 상태에서 한 번 더 열면 Tab만 변경
             // 이미 객체가 있다면 제거
             if (_quickViewWindow != null)
             {
@@ -294,6 +336,37 @@ namespace FastLink
 
             if (addRowWindow.ShowDialog() == true)
                 _linkWindow.AddRow(addRowWindow.InputName, addRowWindow.InputPath, addRowWindow.InputHotkey, addRowWindow.InputType);
+        }
+
+        private void ShowAddClipboardWindow(string? name, RowType type, object? data)
+        {
+            var addClipboardWindow = new AddClipboardWindow("Add Clipboard")
+            {
+                WindowStartupLocation = WindowStartupLocation.CenterScreen,
+                Topmost = true,
+                ShowInTaskbar = true,
+                ShowActivated = true
+            };
+            addClipboardWindow.SetFields(name, null, type, data);
+
+            if (addClipboardWindow.ShowDialog() == true)
+            {
+                string path = string.Empty;
+                if (type == RowType.Image && data is BitmapSource image)
+                {
+                    try
+                    {
+                        // 원본 이미지 파일 저장
+                        path = CommonUtils.SavePng(image);
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Error(ex);
+                    }
+                }
+                _clipboardWindow.AddRow(
+                    addClipboardWindow.InputName, path, addClipboardWindow.InputHotkey, type, addClipboardWindow.Preview);
+            }
         }
 
         public event PropertyChangedEventHandler PropertyChanged;

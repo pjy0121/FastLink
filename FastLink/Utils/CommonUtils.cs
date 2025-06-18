@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using System.Text.RegularExpressions;
 using System.Windows.Media.Imaging;
 using FastLink.Models;
 
@@ -58,6 +59,25 @@ namespace FastLink.Utils
             var transform = new System.Windows.Media.ScaleTransform(scale, scale);
             var scaled = new TransformedBitmap(source, transform);
             return scaled;
+        }
+
+        public static string SavePng(BitmapSource image)
+        {
+            var dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "FastLink", "Images");
+            Directory.CreateDirectory(dir);
+            var filename = $"{Guid.NewGuid()}.png";
+            var path = Path.Combine(dir, filename);
+            using var fs = new FileStream(path, FileMode.Create);
+            var encoder = new PngBitmapEncoder();
+            encoder.Frames.Add(BitmapFrame.Create(image));
+            encoder.Save(fs);
+
+            return path;
+        }
+
+        public static bool IsUrl(string text)
+        {
+            return Regex.IsMatch(text, @"^(https?|ftp)://[^\s/$.?#].[^\s]*$", RegexOptions.IgnoreCase);
         }
     }
 }
